@@ -25,6 +25,17 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Environment variables
+
+Create a `.env` file based on `.env.example` and add your Supabase credentials:
+
+```bash
+cp .env.example .env
+# Edit the new file and add your values
+```
+
+These variables are required by the helper in `lib/supabaseClient.ts`.
+
 ## Get a fresh project
 
 When you're ready, run:
