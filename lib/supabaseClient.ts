@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-// eslint-disable-next-line import/no-unresolved
 import 'react-native-url-polyfill/auto';
-import Constants from 'expo-constants';
-const { SUPABASE_URL, SUPABASE_ANON_KEY } = Constants.manifest?.extra || {};
+export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
+
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
