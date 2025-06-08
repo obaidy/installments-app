@@ -11,9 +11,9 @@ export default function SignupScreen() {
   const [error, setError] = useState('');
 
   async function handleSignup() {
-    const { error } = await signUp(email, password);
-    if (error) {
-      setError(error.message);
+    const { error, roleError } = await signUp(email, password);
+    if (error || roleError) {
+      setError(error?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
     router.replace('/(tabs)');
