@@ -2,20 +2,40 @@ import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import { signUp } from '../../lib/supabaseClient';
+import { signUp, supabase } from '../../lib/supabaseClient';
 
 export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [complexCodes, setComplexCodes] = useState('');
   const [error, setError] = useState('');
 
   async function handleSignup() {
-    const { error, roleError } = await signUp(email, password);
+    const { data, error, roleError } = await signUp(email, password);
     if (error || roleError) {
       setError(error?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
+    const codes = complexCodes
+    .split(/[,\n]+/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  if (codes.length && data.user) {
+    const inserts = codes.map((code) => ({
+      user_id: data.user!.id,
+      complex_code: code,
+    }));
+    const { error: insertError } = await supabase
+      .from('clients')
+      .insert(inserts);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+  }
     router.replace('/(tabs)');
   }
 
@@ -37,6 +57,14 @@ export default function SignupScreen() {
         onChangeText={setPassword}
         value={password}
       />
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        placeholder="Complex Code(s), comma separated"
+        autoCapitalize="none"
+        multiline
+        onChangeText={setComplexCodes}
+        value={complexCodes}
+      />
       <Button title="Create Account" onPress={handleSignup} />
     </View>
   );
@@ -50,6 +78,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderColor: '#ccc',
     borderRadius: 4,
+  },
+    multiline: {
+    height: 60,
   },
   error: { color: 'red' },
 });

@@ -10,7 +10,14 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Copy `.env.example` to `.env` and add your Supabase credentials
+
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Start the app
+
 
    ```bash
    npx expo start
@@ -37,11 +44,12 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Supabase Schema
 
-The `supabase` directory contains SQL for additional tables used by the app. Run the SQL in `supabase/schema.sql` on your project to create the `user_roles` table which stores roles for each user.
+The `supabase` directory contains SQL for additional tables used by the app. Run the SQL in `supabase/schema.sql` on your project to create the `user_roles` table which stores roles for each user. The table now references `auth.users` and the script uses `CREATE TABLE IF NOT EXISTS` to avoid duplicates. If you previously created an older `user_roles` table, drop it before running the updated SQL.
 
 ### Admin pages
 
-Screens under `app/admin` and `app/(web)` that require an admin role will display an "Access denied" message for unauthorized users.
+The admin interface is implemented in `app/(web)/admin.tsx` and there is no `app/admin` directory. Users without the admin role visiting this page will see an "Access denied" message.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
