@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function AddComplexScreen() {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import { signIn } from '@/lib/supabaseClient';
+import { signIn } from '../../lib/supabaseClient';
 
 export default function LoginScreen() {
   const router = useRouter();

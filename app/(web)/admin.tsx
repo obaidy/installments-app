@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 type Complex = { id: number; name: string };
 

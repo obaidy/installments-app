@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
 
 type Unit = { id: number; name: string; complex_id: number };

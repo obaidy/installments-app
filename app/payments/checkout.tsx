@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { View, Button, StyleSheet, Alert } from 'react-native';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function CheckoutScreen() {
