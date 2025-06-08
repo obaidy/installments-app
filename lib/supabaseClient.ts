@@ -13,3 +13,19 @@ export const signIn = (email: string, password: string) =>
   supabase.auth.signInWithPassword({ email, password });
 
 export const signOut = () => supabase.auth.signOut();
+export const getCurrentUserRole = async (): Promise<string | null> => {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) return null;
+
+  const { data, error: roleError } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single();
+
+  if (roleError || !data) return null;
+  return data.role as string;
+};

@@ -35,6 +35,13 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
+## Supabase Schema
+
+The `supabase` directory contains SQL for additional tables used by the app. Run the SQL in `supabase/schema.sql` on your project to create the `user_roles` table which stores roles for each user.
+
+### Admin pages
+
+Screens under `app/admin` and `app/(web)` that require an admin role will display an "Access denied" message for unauthorized users.
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
