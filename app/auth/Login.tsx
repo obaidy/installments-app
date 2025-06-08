@@ -16,7 +16,7 @@ export default function LoginScreen() {
       setError(error.message);
       return;
     }
-    router.replace('/');
+    router.replace('/(tabs)');
   }
 
   return (
