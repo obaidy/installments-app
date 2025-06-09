@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import AddComplexScreen from '../app/complexes/add';
 import { supabase } from '../lib/supabaseClient';
-import { Alert } from 'react-native';
+import { ToastProvider } from '../components/Toast';
 
 jest.mock('../Config', () => ({
   SUPABASE_URL: 'http://localhost',
@@ -15,11 +15,14 @@ describe('AddComplexScreen', () => {
       getUser: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
     };
     (supabase as any).from = jest.fn(() => ({ insert: jest.fn().mockResolvedValue({ error: null }) }));
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   });
 
   it('submits codes to supabase', async () => {
-    const { getByPlaceholderText, getByText } = render(<AddComplexScreen />);
+    const { getByPlaceholderText, getByText } = render(
+      <ToastProvider>
+        <AddComplexScreen />
+      </ToastProvider>,
+    );
     fireEvent.changeText(getByPlaceholderText('Complex Code(s), comma separated'), 'ABC,DEF');
     fireEvent.press(getByText('Add'));
 

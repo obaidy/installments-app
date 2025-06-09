@@ -1,15 +1,22 @@
 import { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { useToast } from '../../components/Toast';
+import { StyledInput } from '../../components/form/StyledInput';
+import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
+import { Layout } from '../../constants/Layout';
 
 export default function AddComplexScreen() {
   const [codes, setCodes] = useState('');
+  const toast = useToast();
 
   async function handleAdd() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      Alert.alert('Please login first.');
+      toast.show('Please login first.');
       return;
     }
 
@@ -19,7 +26,7 @@ export default function AddComplexScreen() {
       .filter(Boolean);
 
     if (codeList.length === 0) {
-      Alert.alert('Please enter at least one code.');
+      toast.show('Please enter at least one code.');
       return;
     }
 
@@ -30,33 +37,32 @@ export default function AddComplexScreen() {
 
     const { error } = await supabase.from('clients').insert(inserts);
 
-    if (error) Alert.alert(error.message);
-    else Alert.alert('Complex added!');
+    if (error) toast.show(error.message);
+    else toast.show('Complex added!');
   }
 
   return (
     <View style={styles.container}>
       <ThemedText type="title">Join Complex</ThemedText>
-      <TextInput
+      <StyledInput
         style={[styles.input, styles.multiline]}
         placeholder="Complex Code(s), comma separated"
         value={codes}
         multiline
         onChangeText={setCodes}
       />
-      <Button title="Add" onPress={handleAdd} />
+     <PrimaryButton title="Add" onPress={handleAdd} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 12 },
+  container: { flex: 1, padding: Layout.screenPadding, gap: Layout.elementGap },
   input: {
     height: 40,
     borderWidth: 1,
     paddingHorizontal: 8,
     borderRadius: 4,
-    borderColor: '#ccc',
   },
   multiline: {
     height: 60,

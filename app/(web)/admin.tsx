@@ -1,34 +1,29 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { supabase, getCurrentUserRole } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
+import useAuthorization from '../../hooks/useAuthorization';
 
 
 type Complex = { id: number; name: string };
 
 export default function AdminScreen() {
   const [complexes, setComplexes] = useState<Complex[]>([]);
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
-    checkAccess();
-  }, []);
-  async function checkAccess() {
-    const role = await getCurrentUserRole();
-    if (role === 'admin') {
-      setAuthorized(true);
+    if (authorized) {
       supabase
         .from('complexes')
         .select('*')
         .then(({ data }) => {
           if (data) setComplexes(data);
         });
-    } else {
-      setAuthorized(false);
+    
     }
-  }
+  }, [authorized]);
 
-  if (authorized === false) {
+  if (!authorized && !loading) {
     return (
       <View style={styles.container}>
         <ThemedText>Access denied</ThemedText>
@@ -36,7 +31,7 @@ export default function AdminScreen() {
     );
   }
 
-  if (authorized === null) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <ThemedText>Loading...</ThemedText>

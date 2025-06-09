@@ -1,5 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
-import { View, Button, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { PrimaryButton } from '../../components/form/PrimaryButton';
+import { useToast } from '../../components/Toast';
+import { Layout } from '../../constants/Layout';
 import { supabase } from '../../lib/supabaseClient';
 import {
   createOrRetrieveCustomer,
@@ -10,6 +13,7 @@ import { ThemedText } from '@/components/ThemedText';
 
 export default function CheckoutScreen() {
   const { unit } = useLocalSearchParams<{ unit: string }>();
+  const toast = useToast();
 
   async function handlePayment() {
     // Retrieve current user
@@ -17,7 +21,7 @@ export default function CheckoutScreen() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      Alert.alert('Please login first');
+      toast.show('Please login first');
       return;
     }
 
@@ -37,20 +41,20 @@ export default function CheckoutScreen() {
         paid_at: new Date().toISOString(),
       });
 
-      Alert.alert('Payment successful: ' + intent.status);
+      toast.show('Payment successful: ' + intent.status);
     } catch (err: any) {
-      Alert.alert(err.message);
+      toast.show(err.message);
     }
   }
 
   return (
     <View style={styles.container}>
       <ThemedText type="title">Checkout</ThemedText>
-      <Button title="Pay Now" onPress={handlePayment} />
+      <PrimaryButton title="Pay Now" onPress={handlePayment} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 16 },
+  container: { flex: 1, justifyContent: 'center', padding: Layout.screenPadding },
 });

@@ -1,29 +1,24 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase, getCurrentUserRole } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
+import useAuthorization from '../../hooks/useAuthorization';
 import { ThemedText } from '@/components/ThemedText';
 
 type Unit = { id: number; name: string; complex_id: number };
 
 export default function UnitsScreen() {
   const [units, setUnits] = useState<Unit[]>([]);
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const { authorized, loading } = useAuthorization('user');
   const router = useRouter();
 
   useEffect(() => {
-    checkAccess();
-  }, []);
 
-  async function checkAccess() {
-    const role = await getCurrentUserRole();
-    if (role === 'user') {
-      setAuthorized(true);
+  if (authorized) {
       fetchUnits();
-    } else {
-      setAuthorized(false);
+    
     }
-  }
+  }, [authorized]);
 
 
   async function fetchUnits() {
@@ -50,7 +45,7 @@ export default function UnitsScreen() {
       </TouchableOpacity>
     );
   }
-  if (authorized === false) {
+  if (!authorized && !loading) {
     return (
       <View style={styles.container}>
         <ThemedText>Access denied</ThemedText>
@@ -58,7 +53,7 @@ export default function UnitsScreen() {
     );
   }
 
-  if (authorized === null) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <ThemedText>Loading...</ThemedText>

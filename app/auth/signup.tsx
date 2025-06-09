@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { View, TextInput, Button, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { StyledInput } from '../../components/form/StyledInput';
+import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { signUp, supabase } from '../../lib/supabaseClient';
+import { Layout } from '../../constants/Layout';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -36,21 +39,21 @@ export default function SignupScreen() {
     <View style={styles.container}>
       <ThemedText type="title">Sign Up</ThemedText>
       {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
-      <TextInput
+      <StyledInput
         style={styles.input}
         placeholder="Email"
         autoCapitalize="none"
         onChangeText={setEmail}
         value={email}
       />
-      <TextInput
+     <StyledInput
         style={styles.input}
         placeholder="Password"
         secureTextEntry
         onChangeText={setPassword}
         value={password}
       />
-      <TextInput
+      <StyledInput
          style={styles.input}
         placeholder="Complex Code"
         autoCapitalize="none"
@@ -58,13 +61,13 @@ export default function SignupScreen() {
         onChangeText={setComplexCode}
         value={complexCode}
       />
-      <Button title="Create Account" onPress={handleSignup} />
+      <PrimaryButton title="Create Account" onPress={handleSignup} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 12, justifyContent: 'center' },
+  container: { flex: 1, padding: Layout.screenPadding, gap: Layout.elementGap, justifyContent: 'center' },
   input: {
     height: 40,
     borderWidth: 1,
