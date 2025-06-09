@@ -12,7 +12,6 @@ export default function CheckoutScreen() {
   const { unit } = useLocalSearchParams<{ unit: string }>();
 
   async function handlePayment() {
-    // Example Stripe integration.
     // Retrieve current user
     const {
       data: { user },
@@ -23,10 +22,7 @@ export default function CheckoutScreen() {
     }
 
     try {
-      // Create or load a Stripe customer based on email
       const customer = await createOrRetrieveCustomer(user.email!);
-
-      // In real app, collect card details from user. Here we use a test token
       const paymentMethod = 'pm_card_visa';
       await storeCard(customer.id, paymentMethod);
 
@@ -45,6 +41,7 @@ export default function CheckoutScreen() {
     } catch (err: any) {
       Alert.alert(err.message);
     }
+  }
 
   return (
     <View style={styles.container}>
