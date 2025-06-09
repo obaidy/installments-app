@@ -10,12 +10,13 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Copy `.env.example` to `.env` and add your Supabase credentials
+2. Copy `.env.example` to `.env` and add your Supabase credentials and Stripe secret key
 
    ```bash
    cp .env.example .env
    ```
-
+   Then edit `.env` and replace the placeholder values for
+   `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 3. Start the app
 
 
@@ -34,6 +35,8 @@ You can start developing by editing the files inside the **app** directory. This
 
 ## Get a fresh project
 
+Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
+
 When you're ready, run:
 
 ```bash
@@ -42,13 +45,24 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
+## Payments
+
+Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
+
+
 ## Supabase Schema
 
-The `supabase` directory contains SQL for additional tables used by the app. Run the SQL in `supabase/schema.sql` on your project to create the `user_roles` table which stores roles for each user. The table now references `auth.users` and the script uses `CREATE TABLE IF NOT EXISTS` to avoid duplicates. If you previously created an older `user_roles` table, drop it before running the updated SQL.
+The `supabase` directory contains SQL for additional tables used by the app. Run
+the SQL in `supabase/schema.sql` on your project to create all the required
+tables. The script defines `user_roles` plus new tables for `complexes`,
+`clients`, `units` and `payments`. Foreign keys link these tables to
+`auth.users` and each other and the script uses `CREATE TABLE IF NOT EXISTS` to
+avoid duplicates. If you previously created older versions of these tables,
+drop them before running the updated SQL.
 
 ### Admin pages
 
-The admin interface is implemented in `app/(web)/admin.tsx` and there is no `app/admin` directory. Users without the admin role visiting this page will see an "Access denied" message.
+Admin functionality lives in `app/(web)/admin.tsx`. There isn't an `app/admin` folder in this project. Users without the admin role visiting this page will see an "Access denied" message.
 
 ## Learn more
 

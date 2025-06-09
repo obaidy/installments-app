@@ -47,7 +47,11 @@ export default function PaymentHistoryScreen() {
       <View style={styles.item}>
         <ThemedText>Amount: {item.amount}</ThemedText>
         <ThemedText>
-          Date: {item.paid_at ? new Date(item.paid_at).toLocaleDateString() : ''}
+        Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
+        </ThemedText>
+        <ThemedText>
+          Paid:{' '}
+          {item.paid_at ? new Date(item.paid_at).toLocaleDateString() : ''}
         </ThemedText>
         <ThemedText>Status: {item.status}</ThemedText>
       </View>

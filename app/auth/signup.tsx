@@ -8,7 +8,7 @@ export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [complexCodes, setComplexCodes] = useState('');
+  const [complexCode, setComplexCode] = useState('');
   const [error, setError] = useState('');
 
   async function handleSignup() {
@@ -17,19 +17,12 @@ export default function SignupScreen() {
       setError(error?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
-    const codes = complexCodes
-    .split(/[,\n]+/)
-    .map((c) => c.trim())
-    .filter(Boolean);
+    const code = complexCode.trim();
 
-  if (codes.length && data.user) {
-    const inserts = codes.map((code) => ({
-      user_id: data.user!.id,
-      complex_code: code,
-    }));
+    if (code && data.user) {
     const { error: insertError } = await supabase
       .from('clients')
-      .insert(inserts);
+      .insert({ user_id: data.user.id, complex_code: code });
 
     if (insertError) {
       setError(insertError.message);
@@ -58,12 +51,12 @@ export default function SignupScreen() {
         value={password}
       />
       <TextInput
-        style={[styles.input, styles.multiline]}
-        placeholder="Complex Code(s), comma separated"
+         style={styles.input}
+        placeholder="Complex Code"
         autoCapitalize="none"
         multiline
-        onChangeText={setComplexCodes}
-        value={complexCodes}
+        onChangeText={setComplexCode}
+        value={complexCode}
       />
       <Button title="Create Account" onPress={handleSignup} />
     </View>
@@ -78,9 +71,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderColor: '#ccc',
     borderRadius: 4,
-  },
-    multiline: {
-    height: 60,
   },
   error: { color: 'red' },
 });
