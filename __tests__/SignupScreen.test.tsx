@@ -38,14 +38,22 @@ describe('SignupScreen', () => {
 
     fireEvent.changeText(getByPlaceholderText('Email'), 'test@example.com');
     fireEvent.changeText(getByPlaceholderText('Password'), 'secret');
-    fireEvent.changeText(getByPlaceholderText('Complex Code'), 'XYZ');
+    fireEvent.changeText(
+      getByPlaceholderText('Complex Code(s), comma or newline separated'),
+      'ABC,DEF\nGHI',
+    );
+
 
     fireEvent.press(getByText('Create Account'));
 
     await waitFor(() => {
       expect(supabaseClient.signUp).toHaveBeenCalledWith('test@example.com', 'secret');
       const insert = (supabase.from as jest.Mock).mock.results[0].value.insert;
-      expect(insert).toHaveBeenCalledWith({ user_id: '1', complex_code: 'XYZ' });
+      expect(insert).toHaveBeenCalledWith([
+        { user_id: '1', complex_code: 'ABC' },
+        { user_id: '1', complex_code: 'DEF' },
+        { user_id: '1', complex_code: 'GHI' },
+      ]);
     });
   });
 });

@@ -15,23 +15,39 @@ export default function SignupScreen() {
   const [error, setError] = useState('');
 
   async function handleSignup() {
+    const codes = complexCode
+    .split(/[\n,]+/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  if (codes.length === 0) {
+    setError('Please enter at least one code.');
+    return;
+  }
+
     const { data, error, roleError } = await signUp(email, password);
     if (error || roleError) {
       setError(error?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
-    const code = complexCode.trim();
+  
 
-    if (code && data.user) {
-    const { error: insertError } = await supabase
+    if (data.user) {
+      const inserts = codes.map((code) => ({
+        user_id: data.user.id,
+        complex_code: code,
+      }));
+
+      const { error: insertError } = await supabase
       .from('clients')
-      .insert({ user_id: data.user.id, complex_code: code });
+      .insert(inserts);
 
     if (insertError) {
       setError(insertError.message);
       return;
     }
-  }
+    }
+    
     router.replace('/(tabs)');
   }
 
@@ -55,7 +71,7 @@ export default function SignupScreen() {
       />
       <StyledInput
          style={styles.input}
-        placeholder="Complex Code"
+        placeholder="Complex Code(s), comma or newline separated"
         autoCapitalize="none"
         multiline
         onChangeText={setComplexCode}

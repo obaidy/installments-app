@@ -17,7 +17,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```
    Then edit `.env` and replace the placeholder values for
    `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and
-   `STRIPE_SECRET_KEY`.
+   EXPO_PUBLIC_STRIPE_SECRET_KEY`.
 3. Start the app
 
 
@@ -36,9 +36,6 @@ You can start developing by editing the files inside the **app** directory. This
 
 ## Get a fresh project
 
-Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
-
-
 When you're ready, run:
 
 ```bash
@@ -49,7 +46,13 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Payments
 
-Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
+Start the backend server before using the checkout screen:
+
+```bash
+npm run start-server
+```
+
+Set `EXPO_PUBLIC_API_URL` in `.env` to the URL of this server. The mobile app will call `/payments/checkout` on this endpoint which uses the secret Stripe key from `stripeClient.ts`. `npm run schedule-charges` can still be run via cron to bill tenants.
 
 
 ## Supabase Schema
@@ -64,8 +67,7 @@ drop them before running the updated SQL.
 
 ### Admin pages
 
-Admin functionality lives in `app/(web)/admin.tsx`. There isn't an `app/admin` folder in this project. Users without the admin role visiting this page will see an "Access denied" message.
-
+Admin functionality lives in the `(web)` directory. Visit `/(web)` to access the dashboard with links to `users`, `complexes` and `units` management screens. These pages require the admin role and use `useAuthorization` to block unauthorized users.
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:

@@ -4,11 +4,7 @@ import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useToast } from '../../components/Toast';
 import { Layout } from '../../constants/Layout';
 import { supabase } from '../../lib/supabaseClient';
-import {
-  createOrRetrieveCustomer,
-  storeCard,
-  chargeCustomer,
-} from '../../lib/stripeClient';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 import { ThemedText } from '@/components/ThemedText';
 
 export default function CheckoutScreen() {
@@ -26,13 +22,14 @@ export default function CheckoutScreen() {
     }
 
     try {
-      const customer = await createOrRetrieveCustomer(user.email!);
-      const paymentMethod = 'pm_card_visa';
-      await storeCard(customer.id, paymentMethod);
-
-      const intent = await chargeCustomer(customer.id, 10000, {
-        unit_id: unit,
+      const response = await fetch(`${API_URL}/payments/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unit, email: user.email }),
       });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Payment failed');
+
 
       await supabase.from('payments').insert({
         unit_id: Number(unit),
@@ -41,7 +38,7 @@ export default function CheckoutScreen() {
         paid_at: new Date().toISOString(),
       });
 
-      toast.show('Payment successful: ' + intent.status);
+      toast.show('Payment successful: ' + result.status);
     } catch (err: any) {
       toast.show(err.message);
     }

@@ -3,10 +3,10 @@ import 'react-native-url-polyfill/auto';
 
 import type { AuthResponse, AuthError, PostgrestError } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
+// const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
+// const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient("https://ulfucdrhbmmfqgqpcgsf.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZnVjZHJoYm1tZnFncXBjZ3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMzA1NjAsImV4cCI6MjA2NDkwNjU2MH0.Q8i0BiqN_D0IFOBIzF5MLvd564ZO9xeAJokuAWq_lmQ");
 
 export const signUp = async (
   email: string,
