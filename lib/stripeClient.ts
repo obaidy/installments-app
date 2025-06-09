@@ -1,8 +1,9 @@
 import Stripe from 'stripe';
-import { STRIPE_SECRET_KEY } from '../Config';
+
+const STRIPE_SECRET_KEY = process.env.EXPO_PUBLIC_STRIPE_SECRET_KEY as string;
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-04-10',
+  apiVersion: '2022-11-15',
 });
 
 export async function createOrRetrieveCustomer(email: string): Promise<Stripe.Customer> {

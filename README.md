@@ -16,7 +16,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    cp .env.example .env
    ```
    Then edit `.env` and replace the placeholder values for
-   `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and
+   `EXPO_PUBLIC_STRIPE_SECRET_KEY`.
 3. Start the app
 
 
@@ -35,7 +36,7 @@ You can start developing by editing the files inside the **app** directory. This
 
 ## Get a fresh project
 
-Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
+Stripe is used for payment processing. Provide your `EXPO_PUBLIC_STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
 
 When you're ready, run:
 
@@ -47,7 +48,7 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Payments
 
-Stripe is used for payment processing. Provide your `STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
+Stripe is used for payment processing. Provide your `EXPO_PUBLIC_STRIPE_SECRET_KEY` in `.env` and run `npm run schedule-charges` via cron to bill tenants.
 
 
 ## Supabase Schema
