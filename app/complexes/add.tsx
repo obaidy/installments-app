@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { useToast } from '../../components/Toast';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
-import { supabase } from '../../lib/supabaseClient';
+import { insertComplexesFromInput } from '../../lib/complexes';
 import { ThemedText } from '@/components/ThemedText';
 import { Layout } from '../../constants/Layout';
 
@@ -12,30 +12,8 @@ export default function AddComplexScreen() {
   const toast = useToast();
 
   async function handleAdd() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.show('Please login first.');
-      return;
-    }
-
-    const codeList = codes
-      .split(/[\n,]+/)
-      .map((c) => c.trim())
-      .filter(Boolean);
-
-    if (codeList.length === 0) {
-      toast.show('Please enter at least one code.');
-      return;
-    }
-
-    const inserts = codeList.map((code) => ({
-      user_id: user.id,
-      complex_code: code,
-    }));
-
-    const { error } = await supabase.from('clients').insert(inserts);
+    const error = await insertComplexesFromInput(codes);
+    if (error) toast.show(error);
 
     if (error) toast.show(error.message);
     else toast.show('Complex added!');

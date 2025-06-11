@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useRouter } from 'expo-router';
@@ -11,28 +12,53 @@ export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [complexCode, setComplexCode] = useState('');
+  const [complexes, setComplexes] = useState<{ code: string; name: string }[]>([]);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    supabase
+      .from('complexes')
+      .select('code, name')
+      .then(({ data }) => {
+        if (data) setComplexes(data);
+      });
+  }, []);
+
+
   async function handleSignup() {
-    const codes = complexCode
-    .split(/[\n,]+/)
-    .map((c) => c.trim())
-    .filter(Boolean);
+    const codes = selectedCodes;
 
-  if (codes.length === 0) {
-    setError('Please enter at least one code.');
-    return;
-  }
+    if (codes.length === 0) {
+      setError('Please select at least one complex.');
+      return;
+    }
 
-    const { data, error, roleError } = await signUp(email, password);
-    if (error || roleError) {
-      setError(error?.message ?? roleError?.message ?? 'Unknown error');
+     const { data, error: signupError, roleError } = await signUp(email, password);
+     if (signupError || roleError) {
+    setError(signupError?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
   
 
     if (data.user) {
+      const { data: existing, error: complexError } = await supabase
+      .from('complexes')
+      .select('code')
+      .in('code', codes);
+
+    if (complexError) {
+      setError(complexError.message);
+      return;
+    }
+
+    const available = new Set(existing?.map((c) => c.code));
+    const invalid = codes.filter((c) => !available.has(c));
+    if (invalid.length > 0) {
+      setError('Complex code does not exist');
+      return;
+    }
       const inserts = codes.map((code) => ({
         user_id: data.user.id,
         complex_code: code,
@@ -42,10 +68,10 @@ export default function SignupScreen() {
       .from('clients')
       .insert(inserts);
 
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
     }
     
     router.replace('/(tabs)');
@@ -69,14 +95,46 @@ export default function SignupScreen() {
         onChangeText={setPassword}
         value={password}
       />
-      <StyledInput
-         style={styles.input}
-        placeholder="Complex Code(s), comma or newline separated"
-        autoCapitalize="none"
-        multiline
-        onChangeText={setComplexCode}
-        value={complexCode}
-      />
+     <Pressable
+        style={styles.pickerToggle}
+        onPress={() => setPickerOpen((o) => !o)}
+      >
+        <ThemedText>
+          {selectedCodes.length > 0
+            ? `Selected: ${complexes
+                .filter((c) => selectedCodes.includes(c.code))
+                .map((c) => c.name)
+                .join(', ')}`
+            : 'Select Complexes'}
+        </ThemedText>
+      </Pressable>
+      {pickerOpen && (
+  <ScrollView style={styles.pickerContainer}>
+    {complexes.map((c) => (
+      <Pressable
+        key={c.code}
+        style={styles.pickerItem}
+        onPress={() =>
+          setSelectedCodes((codes) =>
+            codes.includes(c.code)
+              ? codes.filter((cc) => cc !== c.code)
+              : [...codes, c.code],
+          )
+        }
+      >
+        <MaterialIcons
+          name={
+            selectedCodes.includes(c.code)
+              ? 'check-box'
+              : 'check-box-outline-blank'
+          }
+          size={24}
+        />
+        <ThemedText style={styles.pickerLabel}>{c.name}</ThemedText>
+      </Pressable>
+    ))}
+  </ScrollView>
+)}
       <PrimaryButton title="Create Account" onPress={handleSignup} />
     </View>
   );
@@ -92,4 +150,25 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   error: { color: 'red' },
+  pickerToggle: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    padding: 10,
+  },
+  pickerContainer: {
+    maxHeight: 150,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    marginBottom: Layout.elementGap,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  pickerLabel: {
+    marginLeft: 8,
+  },
 });

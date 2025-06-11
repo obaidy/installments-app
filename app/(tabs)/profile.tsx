@@ -14,6 +14,10 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <ThemedText type="title">Profile</ThemedText>
+      <Button
+        title="Join Complex"
+        onPress={() => router.push('/complexes/add')}
+      />
       <Button title="Sign Out" onPress={handleSignOut} />
     </View>
   );

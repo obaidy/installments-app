@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { createOrRetrieveCustomer, storeCard, chargeCustomer } from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseClient';
@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/payments/checkout', async (req, res) => {
+app.post('/payments/checkout', async (req: Request, res: Response) => {
   const { email, unit } = req.body;
   if (!email || !unit) {
     return res.status(400).json({ error: 'Missing fields' });

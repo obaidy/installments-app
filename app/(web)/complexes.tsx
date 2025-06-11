@@ -12,6 +12,8 @@ type Complex = { id: number; name: string };
 export default function ComplexesScreen() {
   const [complexes, setComplexes] = useState<Complex[]>([]);
   const [editing, setEditing] = useState<Record<number, string>>({});
+  const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
   const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
@@ -39,6 +41,16 @@ export default function ComplexesScreen() {
     fetchComplexes();
   }
 
+  async function addComplex() {
+    if (!newName) return;
+    await supabase
+      .from('complexes')
+      .insert(newCode ? { name: newName, code: newCode } : { name: newName });
+    setNewName('');
+    setNewCode('');
+    fetchComplexes();
+  }
+
   if (!authorized && !loading) {
     return (
       <View style={styles.container}>
@@ -59,6 +71,21 @@ export default function ComplexesScreen() {
   return (
     <View style={styles.container}>
       <ThemedText type="title">Complexes</ThemedText>
+      <View style={styles.addForm}>
+        <StyledInput
+          style={styles.input}
+          placeholder="Name"
+          value={newName}
+          onChangeText={setNewName}
+        />
+        <StyledInput
+          style={styles.input}
+          placeholder="Code (optional)"
+          value={newCode}
+          onChangeText={setNewCode}
+        />
+        <PrimaryButton title="Add" onPress={addComplex} />
+      </View>
       <FlatList
         data={complexes}
         keyExtractor={(item) => item.id.toString()}
@@ -92,6 +119,7 @@ export default function ComplexesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
+  addForm: { marginBottom: 16, gap: 8 },
   item: { padding: 12, backgroundColor: '#fff', borderRadius: 4, gap: 8 },
   input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4 },
   delete: { backgroundColor: 'red' },
