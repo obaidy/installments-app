@@ -29,53 +29,64 @@ export default function SignupScreen() {
 
   async function handleSignup() {
     const codes = selectedCodes;
-
+  
     if (codes.length === 0) {
       setError('Please select at least one complex.');
       return;
     }
-
-     const { data, error: signupError, roleError } = await signUp(email, password);
-     if (signupError || roleError) {
-    setError(signupError?.message ?? roleError?.message ?? 'Unknown error');
+  
+    const { data, error: signupError, roleError } = await signUp(email, password);
+    if (signupError || roleError) {
+      setError(signupError?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
   
-
-    if (data.user) {
+    const userId = data.user?.id;
+  
+    // ✅ Insert user role
+    const { error: roleInsertError } = await supabase
+      .from('user_roles')
+      .insert({ user_id: userId, role: 'user' });
+  
+    if (roleInsertError) {
+      setError(roleInsertError.message);
+      return;
+    }
+  
+    // ✅ Proceed with client-complex mapping
+    if (userId) {
       const { data: existing, error: complexError } = await supabase
-      .from('complexes')
-      .select('code')
-      .in('code', codes);
-
-    if (complexError) {
-      setError(complexError.message);
-      return;
-    }
-
-    const available = new Set(existing?.map((c) => c.code));
-    const invalid = codes.filter((c) => !available.has(c));
-    if (invalid.length > 0) {
-      setError('Complex code does not exist');
-      return;
-    }
+        .from('complexes')
+        .select('code')
+        .in('code', codes);
+  
+      if (complexError) {
+        setError(complexError.message);
+        return;
+      }
+  
+      const available = new Set(existing?.map((c) => c.code));
+      const invalid = codes.filter((c) => !available.has(c));
+      if (invalid.length > 0) {
+        setError('Complex code does not exist');
+        return;
+      }
+  
       const inserts = codes.map((code) => ({
-        user_id: data.user.id,
+        user_id: userId,
         complex_code: code,
       }));
-
-      const { error: insertError } = await supabase
-      .from('clients')
-      .insert(inserts);
-
+  
+      const { error: insertError } = await supabase.from('clients').insert(inserts);
       if (insertError) {
         setError(insertError.message);
         return;
       }
     }
-    
+  
     router.replace('/(tabs)');
   }
+  
 
   return (
     <View style={styles.container}>
