@@ -39,7 +39,7 @@ export default function UnitsScreen() {
     return (
       <TouchableOpacity
         style={styles.item}
-        onPress={() => router.push(`/payments/checkout?unit=${item.id}`)}
+        onPress={() => router.push(`/units/${item.id}`)}
       >
         <ThemedText>{item.name}</ThemedText>
       </TouchableOpacity>

@@ -57,13 +57,13 @@ Set `EXPO_PUBLIC_API_URL` in `.env` to the URL of this server. The mobile app wi
 
 ## Supabase Schema
 
-The `supabase` directory contains SQL for additional tables used by the app. Run
-the SQL in `supabase/schema.sql` on your project to create all the required
-tables. The script defines `user_roles` plus new tables for `complexes`,
-`clients`, `units` and `payments`. Foreign keys link these tables to
-`auth.users` and each other and the script uses `CREATE TABLE IF NOT EXISTS` to
-avoid duplicates. If you previously created older versions of these tables,
-drop them before running the updated SQL.
+The `supabase` directory contains SQL for all tables used by the app. Run the
+SQL in `supabase/schema.sql` on your project to create the required schema. The
+script defines the user management tables along with `complexes`, `units`,
+`installments` and `subscriptions`. Foreign keys link these tables together and
+the script uses `CREATE TABLE IF NOT EXISTS` to avoid duplicates. If you
+previously created older versions of these tables, drop them before running the
+updated SQL.
 
 ### Admin pages
 

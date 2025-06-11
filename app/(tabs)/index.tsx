@@ -1,75 +1,79 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { useEffect, useState } from 'react';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { PrimaryButton } from '@/components/form/PrimaryButton';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { supabase } from '../../lib/supabaseClient';
 
-export default function HomeScreen() {
+interface UnitWithDue {
+  id: number;
+  name: string;
+  total_due: number;
+}
+
+export default function HomeDashboard() {
+  const [units, setUnits] = useState<UnitWithDue[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchUnits();
+  }, []);
+
+  async function fetchUnits() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: unitRows } = await supabase
+      .from('units')
+      .select('id, name')
+      .eq('user_id', user.id);
+    if (!unitRows) return;
+
+    const list: UnitWithDue[] = [];
+    for (const u of unitRows as any[]) {
+      const { data: dueRows } = await supabase
+        .from('installments')
+        .select('amount_iqd')
+        .eq('unit_id', u.id)
+        .eq('paid', false);
+      const total = dueRows?.reduce((s, r) => s + (r.amount_iqd as number), 0) || 0;
+      list.push({ id: u.id, name: u.name, total_due: total });
+    }
+    setUnits(list);
+  }
+
+  const totalDue = units.reduce((sum, u) => sum + (u.total_due || 0), 0);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+    <ThemedText type="title">My Units</ThemedText>
+    <ThemedText>Total Due Now: {totalDue}</ThemedText>
+    <FlatList
+      data={units}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => router.push(`/units/${item.id}`)}
+        >
+          <ThemedText>{item.name}</ThemedText>
+          <ThemedText>Due: {item.total_due}</ThemedText>
+        </TouchableOpacity>
+      )}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+    />
+    <PrimaryButton
+      title="Add Another Unit"
+      onPress={() => router.push('/complexes/add')}
+    />
+  </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  container: { flex: 1, padding: 16, gap: 12 },
+  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4 },
+  separator: { height: 10 },
 });
