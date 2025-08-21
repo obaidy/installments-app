@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { RequestHandler } from 'express';
 import cors from 'cors';
 import { createOrRetrieveCustomer, storeCard, chargeCustomer } from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseClient';
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabaseClient';
 app.use(cors());
 app.use(express.json());
 
-  export async function checkoutHandler(req: Request, res: Response) {
+  export const checkoutHandler: RequestHandler = async (req, res, _next) => {
   const { email, unit } = req.body;
   if (!email || !unit) {
     return res.status(400).json({ error: 'Missing fields' });
@@ -31,7 +31,7 @@ app.use(express.json());
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-}
+};
 
 app.post('/payments/checkout', checkoutHandler);
 
