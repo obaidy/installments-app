@@ -31,13 +31,6 @@ export default function CheckoutScreen() {
       if (!response.ok) throw new Error(result.error || 'Payment failed');
 
 
-      await supabase.from('payments').insert({
-        unit_id: Number(unit),
-        amount: 100,
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-      });
-
       toast.show('Payment successful: ' + result.status);
     } catch (err: any) {
       toast.show(err.message);

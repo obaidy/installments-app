@@ -4,11 +4,11 @@ import cors from 'cors';
 import { createOrRetrieveCustomer, storeCard, chargeCustomer } from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseClient';
 
-const app = express();
+  export const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/payments/checkout', async (req: Request, res: Response) => {
+  export async function checkoutHandler(req: Request, res: Response) {
   const { email, unit } = req.body;
   if (!email || !unit) {
     return res.status(400).json({ error: 'Missing fields' });
@@ -31,7 +31,13 @@ app.post('/payments/checkout', async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-});
+}
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`API server listening on port ${PORT}`));
+app.post('/payments/checkout', checkoutHandler);
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`API server listening on port ${PORT}`));
+}
+
+export default app;

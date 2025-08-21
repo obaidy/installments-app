@@ -13,10 +13,12 @@ export default function AddComplexScreen() {
 
   async function handleAdd() {
     const error = await insertComplexesFromInput(codes);
-    if (error) toast.show(error);
 
-    if (error) toast.show(error.message);
-    else toast.show('Complex added!');
+    if (error) {
+      toast.show(error);
+    } else {
+      toast.show('Complex added!');
+    }
   }
 
   return (

@@ -4,11 +4,15 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
+Make sure Node.js 18 is active by running `nvm use` or installing Node 18.
+
 1. Install dependencies
 
    ```bash
    npm install
    ```
+    **Note**: Expo SDK 53 currently supports Node.js versions 18 and 20. Other
+   versions may cause the CLI to fail.
 
 2. Copy `.env.example` to `.env` and add your Supabase credentials and Stripe secret key
 
