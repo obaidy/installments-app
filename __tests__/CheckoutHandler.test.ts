@@ -27,8 +27,10 @@ describe('checkoutHandler', () => {
       json: jsonMock,
       status: jest.fn().mockReturnThis(),
     };
-    await checkoutHandler(req, res);
+    const next = jest.fn();
+    await checkoutHandler(req, res, next);
     expect(insertMock).toHaveBeenCalledTimes(1);
     expect(jsonMock).toHaveBeenCalledWith({ status: 'succeeded' });
+     expect(next).not.toHaveBeenCalled();
   });
 });

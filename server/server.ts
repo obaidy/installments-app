@@ -1,17 +1,22 @@
 import 'dotenv/config';
 import express, { RequestHandler } from 'express';
 import cors from 'cors';
-import { createOrRetrieveCustomer, storeCard, chargeCustomer } from '../lib/stripeClient';
+import {
+  createOrRetrieveCustomer,
+  storeCard,
+  chargeCustomer,
+} from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseClient';
 
-  export const app = express();
+export const app = express();
 app.use(cors());
 app.use(express.json());
 
-  export const checkoutHandler: RequestHandler = async (req, res, _next) => {
+export const checkoutHandler: RequestHandler = async (req, res, _next) => {
   const { email, unit } = req.body;
   if (!email || !unit) {
-    return res.status(400).json({ error: 'Missing fields' });
+    res.status(400).json({ error: 'Missing fields' });
+    return;
   }
 
   try {
@@ -37,7 +42,9 @@ app.post('/payments/checkout', checkoutHandler);
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => console.log(`API server listening on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(`API server listening on port ${PORT}`),
+  );
 }
 
 export default app;
