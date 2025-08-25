@@ -11,10 +11,10 @@ export type PrimaryButtonProps = TouchableOpacityProps & {
    */
   title: string;
   /**
-   * Optional array of colors for a linear gradient background.
+   * Optional array of at least two colors for a linear gradient background.
    * When provided, the button will render a gradient instead of a solid color.
    */
-  gradientColors?: string[];
+  gradientColors?: [string, string, ...string[]];
 };
 
 export function PrimaryButton({
@@ -30,7 +30,7 @@ export function PrimaryButton({
 
   // When gradient colors are provided, render a gradient background.
     let GradientBackground: ReactNode = null;
-    if (gradientColors && gradientColors.length > 0) {
+    if (gradientColors && gradientColors.length >= 2) {
     GradientBackground = (
       <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
     );
