@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
+import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
-import { PrimaryButton } from '../../components/form/PrimaryButton';
+import { AdminActionButton } from '../../components/admin/AdminActionButton';
+import { AdminListItem } from '../../components/admin/AdminListItem';
 
 type Unit = { id: number; name: string; complex_id: number };
 
@@ -37,29 +39,28 @@ export default function UnitsAdminScreen() {
 
   if (!authorized && !loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Units">
         <ThemedText>Access denied</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Units">
         <ThemedText>Loading...</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Units</ThemedText>
+    <AdminLayout title="Units">
       <FlatList
         data={units}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <View style={styles.item}>
-            <ThemedText>{item.name}</ThemedText>
+          <AdminListItem>
+            <ThemedText style={styles.name}>{item.name}</ThemedText>
             <StyledInput
               style={styles.input}
               value={editing[item.id] ?? ''}
@@ -68,27 +69,28 @@ export default function UnitsAdminScreen() {
                 setEditing((e) => ({ ...e, [item.id]: text }))
               }
             />
-            <PrimaryButton
-              title="Update"
-              onPress={() => updateUnit(item.id)}
-            />
-            <PrimaryButton
-              title="Delete"
-              onPress={() => deleteUnit(item.id)}
-              style={styles.delete}
-            />
-          </View>
+            <View style={styles.actions}>
+              <AdminActionButton
+                title="Update"
+                onPress={() => updateUnit(item.id)}
+              />
+              <AdminActionButton
+                title="Delete"
+                variant="danger"
+                onPress={() => deleteUnit(item.id)}
+              />
+            </View>
+          </AdminListItem>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
-    </View>
+    </AdminLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4, gap: 8 },
-  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4 },
-  delete: { backgroundColor: 'red' },
-  separator: { height: 10 },
+  name: { flex: 1 },
+  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4, flex: 1 },
+  actions: { flexDirection: 'row', gap: 8 },
+  separator: { height: 12 },
 });

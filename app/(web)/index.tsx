@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Link } from 'expo-router';
+import AdminLayout from './AdminLayout';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { getCurrentUserRole } from '../../lib/supabaseClient';
 
@@ -16,23 +17,22 @@ export default function AdminDashboard() {
 
   if (authorized === false) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Admin Dashboard">
         <ThemedText>Access denied</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   if (authorized === null) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Admin Dashboard">
         <ThemedText>Loading...</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Admin Dashboard</ThemedText>
+    <AdminLayout title="Admin Dashboard">
       <Link href="/(web)/users" asChild>
         <PrimaryButton title="Manage Users" style={styles.button} />
       </Link>
@@ -42,11 +42,10 @@ export default function AdminDashboard() {
       <Link href="/(web)/units" asChild>
         <PrimaryButton title="Manage Units" style={styles.button} />
       </Link>
-    </View>
+    </AdminLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
   button: { marginTop: 12 },
 });

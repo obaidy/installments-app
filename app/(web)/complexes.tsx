@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
+import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
-import { PrimaryButton } from '../../components/form/PrimaryButton';
+import { AdminActionButton } from '../../components/admin/AdminActionButton';
+import { AdminListItem } from '../../components/admin/AdminListItem';
+import { AdminModal } from '../../components/admin/AdminModal';
 
 
 type Complex = { id: number; name: string };
@@ -14,6 +17,7 @@ export default function ComplexesScreen() {
   const [editing, setEditing] = useState<Record<number, string>>({});
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
   const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
@@ -53,25 +57,58 @@ export default function ComplexesScreen() {
 
   if (!authorized && !loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Complexes">
         <ThemedText>Access denied</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Complexes">
         <ThemedText>Loading...</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Complexes</ThemedText>
-      <View style={styles.addForm}>
+    <AdminLayout title="Complexes">
+      <AdminActionButton title="Add Complex" onPress={() => setModalVisible(true)} />
+      <FlatList
+        data={complexes}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <AdminListItem>
+            <ThemedText style={styles.name}>{item.name}</ThemedText>
+            <StyledInput
+              style={styles.input}
+              value={editing[item.id] ?? ''}
+              placeholder="New name"
+              onChangeText={(text) =>
+                setEditing((e) => ({ ...e, [item.id]: text }))
+              }
+            />
+            <View style={styles.actions}>
+              <AdminActionButton
+                title="Update"
+                onPress={() => updateComplex(item.id)}
+              />
+              <AdminActionButton
+                title="Delete"
+                variant="danger"
+                onPress={() => deleteComplex(item.id)}
+              />
+            </View>
+          </AdminListItem>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+    <AdminModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title="New Complex"
+      >
         <StyledInput
           style={styles.input}
           placeholder="Name"
@@ -84,44 +121,21 @@ export default function ComplexesScreen() {
           value={newCode}
           onChangeText={setNewCode}
         />
-        <PrimaryButton title="Add" onPress={addComplex} />
-      </View>
-      <FlatList
-        data={complexes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <ThemedText>{item.name}</ThemedText>
-            <StyledInput
-              style={styles.input}
-              value={editing[item.id] ?? ''}
-              placeholder="New name"
-              onChangeText={(text) =>
-                setEditing((e) => ({ ...e, [item.id]: text }))
-              }
-            />
-            <PrimaryButton
-              title="Update"
-              onPress={() => updateComplex(item.id)}
-            />
-            <PrimaryButton
-              title="Delete"
-              onPress={() => deleteComplex(item.id)}
-              style={styles.delete}
-            />
-          </View>
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
-    </View>
+        <AdminActionButton
+          title="Add"
+          onPress={() => {
+            addComplex();
+            setModalVisible(false);
+          }}
+        />
+      </AdminModal>
+    </AdminLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  addForm: { marginBottom: 16, gap: 8 },
-  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4, gap: 8 },
-  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4 },
-  delete: { backgroundColor: 'red' },
-  separator: { height: 10 },
+  name: { flex: 1 },
+  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4, flex: 1 },
+  actions: { flexDirection: 'row', gap: 8 },
+  separator: { height: 12 },
 });

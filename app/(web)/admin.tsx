@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
-
+import AdminLayout from './AdminLayout';
+import { AdminListItem } from '../../components/admin/AdminListItem';
 
 type Complex = { id: number; name: string };
 
@@ -19,39 +20,42 @@ export default function AdminScreen() {
         .then(({ data }) => {
           if (data) setComplexes(data);
         });
-    
     }
   }, [authorized]);
 
   if (!authorized && !loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Admin Portal">
         <ThemedText>Access denied</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <AdminLayout title="Admin Portal">
         <ThemedText>Loading...</ThemedText>
-      </View>
+      </AdminLayout>
     );
   }
 
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Admin Portal</ThemedText>
+    <AdminLayout title="Admin Portal">
       <FlatList
         data={complexes}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <ThemedText>{item.name}</ThemedText>}
+        renderItem={({ item }) => (
+          <AdminListItem>
+            <ThemedText>{item.name}</ThemedText>
+          </AdminListItem>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
-    </View>
+    </AdminLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  separator: { height: 12 },
 });
