@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Image, Pressable, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
-import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { signIn } from '../../lib/supabaseClient';
-import { Layout } from '../../constants/Layout';
+import { DesignTokens } from '../../constants/design';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -23,9 +23,25 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ThemedView
+      style={styles.container}
+      lightColor={DesignTokens.colors.light.background}
+      darkColor={DesignTokens.colors.dark.background}
+    >
+      <Image
+        source={require('../../assets/images/react-logo.png')}
+        style={styles.logo}
+      />
       <ThemedText type="title">Login</ThemedText>
-      {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
+      error ? (
+        <ThemedText
+          style={styles.error}
+          lightColor={DesignTokens.colors.light.error}
+          darkColor={DesignTokens.colors.dark.error}
+        >
+          {error}
+        </ThemedText>
+      ) : null}
       <StyledInput
         style={styles.input}
         placeholder="Email"
@@ -41,17 +57,30 @@ export default function LoginScreen() {
         value={password}
       />
       <PrimaryButton title="Sign In" onPress={handleLogin} />
-    </View>
+      <Pressable onPress={() => router.push('/auth/signup')}>
+        <ThemedText type="link">Create an account</ThemedText>
+      </Pressable>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: Layout.screenPadding, gap: Layout.elementGap, justifyContent: 'center' },
-  input: {
-    height: 40,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: DesignTokens.spacing.screen,
+    gap: DesignTokens.spacing.element,
   },
-  error: { color: 'red' },
+  logo: {
+    width: DesignTokens.sizes.logo,
+    height: DesignTokens.sizes.logo,
+    marginBottom: DesignTokens.spacing.element,
+  },
+  input: {
+    alignSelf: 'stretch',
+  },
+  error: {
+    ...DesignTokens.typography.error,
+  },
 });

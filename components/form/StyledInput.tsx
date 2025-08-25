@@ -1,13 +1,58 @@
 import { StyleSheet, TextInput, TextInputProps } from 'react-native';
+import { useState } from 'react';
+import { DesignTokens } from '../../constants/design';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-export function StyledInput({ style, ...rest }: TextInputProps) {
+export type StyledInputProps = TextInputProps & {
+  /**
+   * Visual style of the input. `outlined` shows a border while
+   * `filled` uses a subtle background color.
+   */
+  variant?: 'filled' | 'outlined';
+};
+
+export function StyledInput({
+  style,
+  variant = 'outlined',
+  onFocus,
+  onBlur,
+  ...rest
+}: StyledInputProps) {
   const theme = useColorScheme() ?? 'light';
+  const [focused, setFocused] = useState(false);
+
+  const inputStyles = [
+    styles.input,
+    {
+      borderColor: focused ? Colors[theme].tint : Colors[theme].icon,
+    },
+  ];
+
+  if (variant === 'filled') {
+    inputStyles.push({
+      backgroundColor: `${Colors[theme].tint}20`,
+      borderWidth: 0,
+    });
+  } else {
+    inputStyles.push({
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+    });
+  }
+
   return (
     <TextInput
-      style={[styles.input, { borderColor: Colors[theme].tint }, style]}
+       style={[...inputStyles, style]}
       placeholderTextColor={Colors[theme].icon}
+      onFocus={(e) => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        onBlur?.(e);
+      }}
       {...rest}
     />
   );
@@ -15,9 +60,9 @@ export function StyledInput({ style, ...rest }: TextInputProps) {
 
 const styles = StyleSheet.create({
   input: {
-    height: 40,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+    height: DesignTokens.sizes.inputHeight,
+    borderWidth: DesignTokens.border.width,
+    paddingHorizontal: DesignTokens.spacing.inputHorizontal,
+    borderRadius: DesignTokens.radius.sm,
   },
 });

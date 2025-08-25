@@ -1,6 +1,6 @@
-export const Layout = {
-    screenPadding: 16,
-    elementGap: 12,
-  };
+import { spacing } from '../constants/design';
 
-  
+export const Layout = {
+  screenPadding: spacing.lg,
+  elementGap: spacing.md,
+};
