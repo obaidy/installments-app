@@ -10,8 +10,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
-  const activeColor = palette.primary;
-  const inactiveColor = theme === 'dark' ? palette.iconDark : palette.iconLight;
+  const activeColor = palette[theme].primary;
+  const inactiveColor = palette[theme].icon;
   const backgroundColor =
     theme === 'dark'
       ? 'rgba(21, 23, 24, 0.8)'

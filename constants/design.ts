@@ -1,12 +1,20 @@
 export const palette = {
-  primary: '#0a7ea4',
-  secondary: '#ff6b6b',
-  textLight: '#11181C',
-  textDark: '#ECEDEE',
-  backgroundLight: '#ffffff',
-  backgroundDark: '#151718',
-  iconLight: '#687076',
-  iconDark: '#9BA1A6',
+  light: {
+    background: '#f8fafc',
+    text: '#1f2937',
+    primary: '#1d4ed8',
+    secondary: '#9333ea',
+    accent: '#0f766e',
+    icon: '#475569',
+  },
+  dark: {
+    background: '#0f172a',
+    text: '#f9fafb',
+    primary: '#60a5fa',
+    secondary: '#c084fc',
+    accent: '#2dd4bf',
+    icon: '#9ca3af',
+  },
 },
 DesignTokens = {
   spacing: {

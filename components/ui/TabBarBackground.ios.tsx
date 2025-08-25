@@ -8,10 +8,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function BlurTabBarBackground() {
   const theme = useColorScheme() ?? 'light';
-  const backgroundColor =
-    theme === 'dark'
-      ? `${palette.backgroundDark}cc`
-      : `${palette.backgroundLight}cc`;
+  const backgroundColor = `${palette[theme].background}cc`;
   return (
     <BlurView
       tint={theme}
