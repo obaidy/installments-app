@@ -1,6 +1,5 @@
 import { StyleSheet, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import type { ReactNode } from 'react';
-// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
