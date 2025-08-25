@@ -26,7 +26,7 @@ export function StyledInput({
 }: StyledInputProps) {
   const theme = useColorScheme() ?? 'light';
   const [focused, setFocused] = useState(false);
-
+  const placeholderColor = `${Colors[theme].text}${DesignTokens.placeholderColor}`;
   const inputStyles: ViewStyle[] = [
     styles.input,
     {
@@ -49,7 +49,7 @@ export function StyledInput({
   return (
     <TextInput
        style={[...inputStyles, style]}
-      placeholderTextColor={Colors[theme].icon}
+      placeholderTextColor={placeholderColor}
       onFocus={(e) => {
         setFocused(true);
         onFocus?.(e);

@@ -1,9 +1,8 @@
 import { StyleSheet, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { ThemedText } from '@/components/ThemedText';
+import { palette, DesignTokens } from '../../constants/design';
 
 export type PrimaryButtonProps = TouchableOpacityProps & {
   /**
@@ -23,40 +22,45 @@ export function PrimaryButton({
   style,
   ...rest
 }: PrimaryButtonProps) {
-  const theme = useColorScheme() ?? 'light';
+  const colors =
+    gradientColors && gradientColors.length >= 2
+      ? gradientColors
+      : [palette.primary, palette.secondary, palette.primary];
 
   // Base styles applied to the TouchableOpacity regardless of background type
   const buttonStyle = [styles.button, style];
 
-  // When gradient colors are provided, render a gradient background.
-    let GradientBackground: ReactNode = null;
-    if (gradientColors && gradientColors.length >= 2) {
-    GradientBackground = (
-      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
-    );
-  } else {
-    buttonStyle.unshift({ backgroundColor: Colors[theme].tint });
-  }
+  let GradientBackground: ReactNode = (
+    <LinearGradient colors={colors} style={StyleSheet.absoluteFill} />
+  );
 
   return (
-    <TouchableOpacity style={buttonStyle} activeOpacity={0.8} {...rest}>
+    <TouchableOpacity
+      style={buttonStyle}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      {...rest}
+    >
       {GradientBackground}
-      <ThemedText style={styles.text}>{title}</ThemedText>
+      <ThemedText type="defaultSemiBold" style={styles.text}>
+        {title}
+      </ThemedText>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    ...DesignTokens.shadows.sm,
   },
   text: {
     color: '#fff',
-    fontWeight: '600',
+    fontSize: 16,
   },
 });

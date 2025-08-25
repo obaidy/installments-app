@@ -32,6 +32,26 @@ DesignTokens = {
   border: {
     width: 1,
   },
+  shadows: {
+    sm: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    md: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+  },
+  /**
+   * Opacity hex value appended to base text color to create placeholder text color (~60% opacity).
+   */
+  placeholderColor: '99',
   colors: {
     light: {
       background: '#f4f8fb',
