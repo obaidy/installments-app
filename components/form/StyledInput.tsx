@@ -1,4 +1,9 @@
-import { StyleSheet, TextInput, TextInputProps } from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
 import { useState } from 'react';
 import { DesignTokens } from '../../constants/design';
 import { Colors } from '@/constants/Colors';
@@ -22,7 +27,7 @@ export function StyledInput({
   const theme = useColorScheme() ?? 'light';
   const [focused, setFocused] = useState(false);
 
-  const inputStyles = [
+  const inputStyles: ViewStyle[] = [
     styles.input,
     {
       borderColor: focused ? Colors[theme].tint : Colors[theme].icon,

@@ -1,4 +1,7 @@
 import { StyleSheet, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import type { ReactNode } from 'react';
+// eslint-disable-next-line import/no-unresolved
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { ThemedText } from '@/components/ThemedText';
@@ -27,14 +30,8 @@ export function PrimaryButton({
   const buttonStyle = [styles.button, style];
 
   // When gradient colors are provided, render a gradient background.
-  // `expo-linear-gradient` is required dynamically to avoid adding a hard dependency
-  // when gradients are not used.
-  let GradientBackground: JSX.Element | null = null;
-  if (gradientColors && gradientColors.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { LinearGradient } = require('expo-linear-gradient') as {
-      LinearGradient: any;
-    };
+    let GradientBackground: ReactNode = null;
+    if (gradientColors && gradientColors.length > 0) {
     GradientBackground = (
       <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
     );

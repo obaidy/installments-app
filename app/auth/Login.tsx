@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { ThemedText } from '@/components/ThemedText';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { ThemedView } from '@/components/ThemedView';
@@ -33,7 +34,7 @@ export default function LoginScreen() {
         style={styles.logo}
       />
       <ThemedText type="title">Login</ThemedText>
-      error ? (
+        {error ? (
         <ThemedText
           style={styles.error}
           lightColor={DesignTokens.colors.light.error}
