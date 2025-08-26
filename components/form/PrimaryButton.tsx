@@ -1,7 +1,13 @@
-import { StyleSheet, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  TouchableOpacityProps,
+  type ColorValue,
+} from 'react-native';
 import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/ThemedText';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { palette, DesignTokens } from '../../constants/design';
 
 export type PrimaryButtonProps = TouchableOpacityProps & {
@@ -22,10 +28,13 @@ export function PrimaryButton({
   style,
   ...rest
 }: PrimaryButtonProps) {
-  const colors =
+  const theme = useColorScheme() ?? 'light';
+  const { primary, secondary } = palette[theme];
+
+  const colors: [ColorValue, ColorValue, ...ColorValue[]] =
     gradientColors && gradientColors.length >= 2
       ? gradientColors
-      : [palette.primary, palette.secondary, palette.primary];
+      : [primary, secondary, primary];
 
   // Base styles applied to the TouchableOpacity regardless of background type
   const buttonStyle = [styles.button, style];
