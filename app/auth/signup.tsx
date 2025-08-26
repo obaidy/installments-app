@@ -44,14 +44,14 @@ export default function SignupScreen() {
     const userId = data.user?.id;
   
     // ✅ Insert user role
-    const { error: roleInsertError } = await supabase
-      .from('user_roles')
-      .insert({ user_id: userId, role: 'user' });
+    // const { error: roleInsertError } = await supabase
+    //   .from('user_roles')
+    //   .insert({ user_id: userId, role: 'user' });
   
-    if (roleInsertError) {
-      setError(roleInsertError.message);
-      return;
-    }
+    // if (roleInsertError) {
+    //   setError(roleInsertError.message);
+    //   return;
+    // }
   
     // ✅ Proceed with client-complex mapping
     if (userId) {
