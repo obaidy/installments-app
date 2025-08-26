@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { supabase } from '../lib/supabaseClient';
 import { chargeCustomer } from '../lib/stripeClient';
 
+type PaymentStatus = 'pending' | 'paid' | 'failed' | 'cancelled';
+
 /**
  * Charge due installments and update their status.
  * Intended to be executed on a cron schedule.
@@ -10,8 +12,8 @@ export async function main() {
   const now = new Date().toISOString();
   const { data: installments, error } = await supabase
     .from('installments')
-    .select('id, unit_id, customer_id, amount')
-    .eq('status', 'pending')
+    .select('id, unit_id, amount_iqd, units(customer_id)')
+    .eq('paid', false)
     .lte('due_date', now);
 
     if (error) throw error;
@@ -20,30 +22,37 @@ export async function main() {
     let failures = 0;
 
   for (const inst of installments as any[]) {
-    if (!inst.customer_id) continue;
-    const amount = inst.amount as number;
+    const customerId = inst.units?.customer_id;
+    if (!customerId) continue;
+    const amount = inst.amount_iqd as number;
     try {
       const intent = await chargeCustomer(
-        inst.customer_id,
+        customerId,
         Math.round(amount * 100),
         { unit_id: inst.unit_id, installment_id: inst.id },
       );
+
+      const succeeded = intent.status === 'succeeded';
+      const status: PaymentStatus = succeeded ? 'paid' : 'failed';
 
       await supabase.from('payments').insert({
         unit_id: inst.unit_id,
         installment_id: inst.id,
         amount,
-        status: intent.status,
-        paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+        status,
+        paid_at: succeeded ? new Date().toISOString() : null,
       });
 
-      const newStatus = intent.status === 'succeeded' ? 'paid' : 'failed';
+      
       await supabase
         .from('installments')
-        .update({ status: newStatus })
+        .update({
+          paid: succeeded,
+          paid_at: succeeded ? new Date().toISOString() : null,
+        })
         .eq('id', inst.id);
 
-      if (intent.status !== 'succeeded') {
+      if (!succeeded) {
         failures++;
         console.error(
           `❌ Charge failed for installment ${inst.id}: ${intent.status}`,
@@ -52,9 +61,16 @@ export async function main() {
     } catch (err) {
       failures++;
       console.error(`❌ Error processing installment ${inst.id}:`, err);
+      await supabase.from('payments').insert({
+        unit_id: inst.unit_id,
+        installment_id: inst.id,
+        amount,
+        status: 'failed',
+        paid_at: null,
+      });
       await supabase
         .from('installments')
-        .update({ status: 'failed' })
+        .update({ paid: false })
         .eq('id', inst.id);
     }
   }

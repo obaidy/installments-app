@@ -3,52 +3,43 @@ import { View, FlatList, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
 
-type Payment = {
+type DueItem = {
   id: number;
-  amount: number;
-  status: string;
+  amount_iqd: number;
   due_date: string | null;
+  paid: boolean;
 };
 
 export default function UpcomingInstallmentsScreen() {
-  const [installments, setInstallments] = useState<Payment[]>([]);
+  const [dues, setDues] = useState<DueItem[]>([]);
 
   useEffect(() => {
-    fetchInstallments();
+    fetchDues();
   }, []);
 
-  async function fetchInstallments() {
+  async function fetchDues() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: units } = await supabase
-      .from('units')
-      .select('id')
-      .eq('user_id', user.id);
-
-    const unitIds = units?.map((u) => u.id) || [];
-    if (unitIds.length === 0) return;
-
     const { data, error } = await supabase
-      .from('payments')
+      .from('v_user_dues')
       .select('*')
-      .in('unit_id', unitIds)
-      .eq('status', 'pending')
+      .eq('user_id', user.id)
       .order('due_date', { ascending: true });
 
-    if (!error && data) setInstallments(data as Payment[]);
+   if (!error && data) setDues(data as DueItem[]);
   }
 
-  function renderItem({ item }: { item: Payment }) {
+  function renderItem({ item }: { item: DueItem }) {
     return (
       <View style={styles.item}>
-        <ThemedText>Amount: {item.amount}</ThemedText>
+        <ThemedText>Amount: {item.amount_iqd}</ThemedText>
         <ThemedText>
           Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
         </ThemedText>
-        <ThemedText>Status: {item.status}</ThemedText>
+        <ThemedText>Paid: {item.paid ? 'Yes' : 'No'}</ThemedText>
       </View>
     );
   }
@@ -57,7 +48,7 @@ export default function UpcomingInstallmentsScreen() {
     <View style={styles.container}>
       <ThemedText type="title">Upcoming Installments</ThemedText>
       <FlatList
-        data={installments}
+        data={dues}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

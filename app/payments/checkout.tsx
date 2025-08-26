@@ -9,54 +9,45 @@ import { ThemedText } from '@/components/ThemedText';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-type Installment = {
+type Due = {
   id: number;
-  amount: number;
+  amount_iqd: number;
   due_date: string | null;
-  status: string;
+  paid: boolean;
 };
 
 export default function CheckoutScreen() {
-  const { unit } = useLocalSearchParams<{ unit: string }>();
+  const { id, type } = useLocalSearchParams<{ id: string; type: string }>();
   const toast = useToast();
 
-  const [installment, setInstallment] = useState<Installment | null>(null);
+  const [due, setDue] = useState<Due | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchInstallment() {
+    async function fetchDue() {
+      if (!id || !type) return;
       setLoading(true);
-      toast.show('Loading installment...');
+      toast.show('Loading due item...');
+      const table = type === 'service_fee' ? 'service_fees' : 'installments';
       const { data, error } = await supabase
-        .from('payments')
+        .from(table)
         .select('*')
-        .eq('unit_id', unit)
-        .in('status', ['pending', 'processing'])
-        .order('due_date', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .eq('id', id)
+        .single();
       setLoading(false);
       if (error || !data) {
-        toast.show('No pending installments');
-        setInstallment(null);
+        toast.show('No due item found');
+        setDue(null);
         return;
       }
-      setInstallment(data as Installment);
+      setDue(data as Due);
     }
-    if (unit) fetchInstallment();
-    // toast is stable from context, but included for completeness
-  }, [unit, toast]);
+     fetchDue();
+  }, [id, type, toast]);
 
   async function handlePayment() {
-    if (!installment) {
-      toast.show('No installment to pay');
-      return;
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.show('Please login first');
+    if (!due) {
+      toast.show('No due item to pay');
       return;
     }
 
@@ -64,7 +55,11 @@ export default function CheckoutScreen() {
       const response = await fetch(`${API_URL}/payments/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unit, email: user.email, installmentId: installment.id }),
+        body: JSON.stringify({
+          amountIQD: due.amount_iqd,
+          description: type,
+          metadata: { targetId: due.id, targetType: type },
+        }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Payment failed');
@@ -82,22 +77,22 @@ export default function CheckoutScreen() {
     );
   }
 
-  if (!installment) {
+  if (!due) {
     return (
       <View style={styles.container}>
-        <ThemedText>No pending installments</ThemedText>
+        <ThemedText>No pending items</ThemedText>
       </View>
     );
   }
 
-
   return (
     <View style={styles.container}>
       <ThemedText type="title">Checkout</ThemedText>
-      <ThemedText>Amount: {installment.amount}</ThemedText>
+      <ThemedText>Amount: {due.amount_iqd}</ThemedText>
       <ThemedText>
-        Due: {installment.due_date ? new Date(installment.due_date).toLocaleDateString() : ''}
+        Due: {due.due_date ? new Date(due.due_date).toLocaleDateString() : ''}
       </ThemedText>
+      <ThemedText>Paid: {due.paid ? 'Yes' : 'No'}</ThemedText>
       <PrimaryButton title="Pay Now" onPress={handlePayment} />
     </View>
   );
