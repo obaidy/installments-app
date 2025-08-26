@@ -14,14 +14,13 @@ Make sure Node.js 18 is active by running `nvm use` or installing Node 18.
     **Note**: Expo SDK 53 currently supports Node.js versions 18 and 20. Other
    versions may cause the CLI to fail.
 
-2. Copy `.env.example` to `.env` and add your Supabase credentials and Stripe secret key
+2. Copy `.env.example` to `.env` and add your Supabase credentials and Stripe secrets
 
    ```bash
    cp .env.example .env
    ```
    Then edit `.env` and replace the placeholder values for
-   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and
-   EXPO_PUBLIC_STRIPE_SECRET_KEY`.
+   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and optionally `APP_BASE_URL`.
 3. Start the app
 
 
@@ -56,7 +55,8 @@ Start the backend server before using the checkout screen:
 npm run start-server
 ```
 
-Set `EXPO_PUBLIC_API_URL` in `.env` to the URL of this server. The mobile app will call `/payments/checkout` on this endpoint which uses the secret Stripe key from `stripeClient.ts`. `npm run schedule-charges` can still be run via cron to bill tenants.
+ run via cron to bill tenants.
+Set `EXPO_PUBLIC_API_URL` in `.env` to the URL of this server. The mobile app will call `/payments/checkout` on this endpoint which uses the Stripe secrets from `.env`. `npm run schedule-charges` can still be run via cron to bill tenants.
 
 
 ## Supabase Schema
