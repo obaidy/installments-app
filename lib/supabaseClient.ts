@@ -19,7 +19,7 @@ export const signUp = async (
   if (data.user) {
     const { error: insertError } = await supabase
       .from('user_roles')
-      .insert({ user_id: data.user.id, role: 'user' });
+      .insert({ user_id: data.user.id, role: 'client' });
 
     roleError = insertError;
   }
@@ -47,6 +47,14 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
     if (roleError || !data) return null;
   return data.role as string;
 };
+
+export const grantAdminRole = (userId: string) =>
+  supabase.from('user_roles').upsert({ user_id: userId, role: 'admin' });
+
+export const grantManagerRole = (userId: string, complexId: number) =>
+  supabase
+    .from('complex_roles')
+    .upsert({ user_id: userId, complex_id: complexId, role: 'manager' });
 
 export const grantComplexRole = (
   userId: string,

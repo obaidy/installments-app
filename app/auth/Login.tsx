@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { ThemedView } from '@/components/ThemedView';
-import { signIn } from '../../lib/supabaseClient';
+import { signIn, getCurrentUserRole } from '../../lib/supabaseClient';
 import { DesignTokens } from '../../constants/design';
 
 export default function LoginScreen() {
@@ -20,7 +20,20 @@ export default function LoginScreen() {
       setError(error.message);
       return;
     }
-    router.replace('/(tabs)');
+    
+    const role = await getCurrentUserRole();
+    if (!role) {
+      setError('Unable to determine user role');
+      return;
+    }
+
+    if (role === 'admin') {
+      router.replace('/(web)');
+    } else if (role === 'manager') {
+      router.replace('/(manager)');
+    } else {
+      router.replace('/(tabs)');
+    }
   }
 
   return (

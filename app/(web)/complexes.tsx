@@ -20,7 +20,7 @@ export default function ComplexesScreen() {
   const [newCode, setNewCode] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [roleInputs, setRoleInputs] = useState<Record<number, { userId: string; role: string }>>({});
-  const { authorized, loading } = useAuthorization('admin');
+  const { authorized, loading } = useAuthorization(['admin']);
 
   useEffect(() => {
     if (authorized) {

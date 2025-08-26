@@ -9,7 +9,7 @@ type Unit = { id: number; name: string; complex_id: number };
 
 export default function UnitsScreen() {
   const [units, setUnits] = useState<Unit[]>([]);
-  const { authorized, loading } = useAuthorization('user');
+  const { authorized, loading } = useAuthorization(['user']);
   const router = useRouter();
 
   useEffect(() => {
