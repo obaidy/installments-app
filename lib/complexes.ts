@@ -1,6 +1,8 @@
-import { supabase } from './supabaseClient';
+import { supabase, grantComplexRole } from './supabaseClient';
 
-export async function insertComplexesFromInput(codesInput: string): Promise<string | null> {
+export async function insertComplexesFromInput(
+  codesInput: string,
+): Promise<string | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -13,12 +15,25 @@ export async function insertComplexesFromInput(codesInput: string): Promise<stri
 
   if (codeList.length === 0) return 'Please enter at least one code.';
 
-  const inserts = codeList.map((code) => ({
-    user_id: user.id,
-    complex_code: code,
-  }));
+  const { data: complexes, error } = await supabase
+    .from('complexes')
+    .select('id, code')
+    .in('code', codeList);
 
-  const { error } = await supabase.from('clients').insert(inserts);
+ if (error) return error.message;
 
-  return error ? error.message : null;
+  const existingMap = new Map((complexes ?? []).map((c) => [c.code, c.id]));
+  const invalid = codeList.filter((c) => !existingMap.has(c));
+  if (invalid.length > 0) return 'Complex code does not exist';
+
+  for (const id of existingMap.values()) {
+    const { error: roleError } = await grantComplexRole(
+      user.id,
+      id,
+      'client',
+    );
+    if (roleError) return roleError.message;
+  }
+
+  return null;
 }

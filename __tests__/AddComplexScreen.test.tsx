@@ -2,7 +2,9 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import AddComplexScreen from '../app/complexes/add';
 import { supabase } from '../lib/supabaseClient';
+import * as supabaseClient from '../lib/supabaseClient';
 import { ToastProvider } from '../components/Toast';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 
 jest.mock('../Config', () => ({
   SUPABASE_URL: 'http://localhost',
@@ -10,11 +12,37 @@ jest.mock('../Config', () => ({
 }));
 
 describe('AddComplexScreen', () => {
+  const mockGrantResponse: PostgrestSingleResponse<null> = {
+    data: null,
+    error: null,
+    count: null,
+    status: 201,
+    statusText: 'Created',
+  };
+
   beforeEach(() => {
     (supabase as any).auth = {
-      getUser: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
+      getUser: jest
+        .fn()
+        .mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
     };
-    (supabase as any).from = jest.fn(() => ({ insert: jest.fn().mockResolvedValue({ error: null }) }));
+
+    const inMock = jest
+      .fn()
+      .mockResolvedValue({
+        data: [
+          { id: 1, code: 'ABC' },
+          { id: 2, code: 'DEF' },
+        ],
+        error: null,
+      });
+
+    const selectMock = jest.fn(() => ({ in: inMock }));
+    (supabase as any).from = jest.fn(() => ({ select: selectMock }));
+
+    jest
+      .spyOn(supabaseClient, 'grantComplexRole')
+      .mockResolvedValue(mockGrantResponse);
   });
 
   it('submits codes to supabase', async () => {
@@ -23,15 +51,25 @@ describe('AddComplexScreen', () => {
         <AddComplexScreen />
       </ToastProvider>,
     );
-    fireEvent.changeText(getByPlaceholderText('Complex Code(s), comma separated'), 'ABC,DEF');
+
+    fireEvent.changeText(
+      getByPlaceholderText('Complex Code(s), comma separated'),
+      'ABC,DEF',
+    );
     fireEvent.press(getByText('Add'));
 
     await waitFor(() => {
-      const insert = (supabase.from as jest.Mock).mock.results[0].value.insert;
-      expect(insert).toHaveBeenCalledWith([
-        { user_id: '1', complex_code: 'ABC' },
-        { user_id: '1', complex_code: 'DEF' },
-      ]);
+      expect(supabase.from).toHaveBeenCalledWith('complexes');
+      expect(supabaseClient.grantComplexRole).toHaveBeenCalledWith(
+        '1',
+        1,
+        'client',
+      );
+      expect(supabaseClient.grantComplexRole).toHaveBeenCalledWith(
+        '1',
+        2,
+        'client',
+      );
     });
   });
 });

@@ -5,7 +5,7 @@ import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import { signUp, supabase } from '../../lib/supabaseClient';
+import { signUp, supabase, grantComplexRole } from '../../lib/supabaseClient';
 import { Layout } from '../../constants/Layout';
 
 export default function SignupScreen() {
@@ -53,11 +53,11 @@ export default function SignupScreen() {
     //   return;
     // }
   
-    // ✅ Proceed with client-complex mapping
+     // ✅ Proceed with user-complex association
     if (userId) {
       const { data: existing, error: complexError } = await supabase
         .from('complexes')
-        .select('code')
+        .select('id, code')
         .in('code', codes);
   
       if (complexError) {
@@ -65,22 +65,24 @@ export default function SignupScreen() {
         return;
       }
   
-      const available = new Set(existing?.map((c) => c.code));
-      const invalid = codes.filter((c) => !available.has(c));
+      const existingMap = new Map((existing ?? []).map((c) => [c.code, c.id]));
+      const invalid = codes.filter((c) => !existingMap.has(c));
       if (invalid.length > 0) {
         setError('Complex code does not exist');
         return;
       }
   
-      const inserts = codes.map((code) => ({
-        user_id: userId,
-        complex_code: code,
-      }));
-  
-      const { error: insertError } = await supabase.from('clients').insert(inserts);
-      if (insertError) {
-        setError(insertError.message);
-        return;
+      
+      for (const id of existingMap.values()) {
+        const { error: roleError } = await grantComplexRole(
+          userId,
+          id,
+          'client',
+        );
+        if (roleError) {
+          setError(roleError.message);
+          return;
+        }
       }
     }
   
