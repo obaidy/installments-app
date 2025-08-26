@@ -44,6 +44,42 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
     .eq('user_id', user.id)
     .single();
 
+    if (roleError || !data) return null;
+  return data.role as string;
+};
+
+export const grantComplexRole = (
+  userId: string,
+  complexId: number,
+  role: string,
+) =>
+  supabase
+    .from('complex_roles')
+    .upsert({ user_id: userId, complex_id: complexId, role });
+
+export const revokeComplexRole = (userId: string, complexId: number) =>
+  supabase
+    .from('complex_roles')
+    .delete()
+    .eq('user_id', userId)
+    .eq('complex_id', complexId);
+
+export const getUserComplexRole = async (
+  complexId: number,
+): Promise<string | null> => {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) return null;
+
+  const { data, error: roleError } = await supabase
+    .from('complex_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('complex_id', complexId)
+    .single();
+
   if (roleError || !data) return null;
   return data.role as string;
 };

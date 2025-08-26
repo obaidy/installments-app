@@ -1,4 +1,13 @@
-import { signIn, signOut, signUp, getCurrentUserRole, supabase } from '../lib/supabaseClient';
+import {
+  signIn,
+  signOut,
+  signUp,
+  getCurrentUserRole,
+  grantComplexRole,
+  revokeComplexRole,
+  getUserComplexRole,
+  supabase,
+} from '../lib/supabaseClient';
 
 jest.mock('../Config', () => ({
   SUPABASE_URL: 'http://localhost',
@@ -51,5 +60,48 @@ describe('supabaseClient auth helpers', () => {
     expect(selectMock).toHaveBeenCalledWith('role');
     expect(eqMock).toHaveBeenCalledWith('user_id', '1');
     expect(role).toBe('admin');
+  });
+
+  test('grantComplexRole upserts role', async () => {
+    const upsertMock = jest.fn().mockResolvedValue({});
+    (supabase.from as jest.Mock).mockReturnValue({ upsert: upsertMock });
+    await grantComplexRole('u1', 1, 'manager');
+    expect(supabase.from).toHaveBeenCalledWith('complex_roles');
+    expect(upsertMock).toHaveBeenCalledWith({
+      user_id: 'u1',
+      complex_id: 1,
+      role: 'manager',
+    });
+  });
+
+  test('revokeComplexRole deletes role', async () => {
+    const eqMock2 = jest.fn();
+    const eqMock1 = jest.fn(() => ({ eq: eqMock2 }));
+    const deleteMock = jest.fn(() => ({ eq: eqMock1 }));
+    (supabase.from as jest.Mock).mockReturnValue({ delete: deleteMock });
+    await revokeComplexRole('u1', 2);
+    expect(deleteMock).toHaveBeenCalled();
+    expect(eqMock1).toHaveBeenCalledWith('user_id', 'u1');
+    expect(eqMock2).toHaveBeenCalledWith('complex_id', 2);
+  });
+
+  test('getUserComplexRole returns role for complex', async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: '1' } },
+      error: null,
+    });
+    const singleMock = jest
+      .fn()
+      .mockResolvedValue({ data: { role: 'manager' }, error: null });
+    const eqMock2 = jest.fn(() => ({ single: singleMock }));
+    const eqMock1 = jest.fn(() => ({ eq: eqMock2 }));
+    const selectMock = jest.fn(() => ({ eq: eqMock1 }));
+    (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+    const role = await getUserComplexRole(3);
+    expect(selectMock).toHaveBeenCalledWith('role');
+    expect(eqMock1).toHaveBeenCalledWith('user_id', '1');
+    expect(eqMock2).toHaveBeenCalledWith('complex_id', 3);
+    expect(role).toBe('manager');
   });
 });

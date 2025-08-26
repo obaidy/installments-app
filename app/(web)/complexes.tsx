@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, grantComplexRole, revokeComplexRole } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
 import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
@@ -10,7 +10,8 @@ import { AdminListItem } from '../../components/admin/AdminListItem';
 import { AdminModal } from '../../components/admin/AdminModal';
 
 
-type Complex = { id: number; name: string };
+type ComplexRole = { user_id: string; role: string };
+type Complex = { id: number; name: string; complex_roles?: ComplexRole[] };
 
 export default function ComplexesScreen() {
   const [complexes, setComplexes] = useState<Complex[]>([]);
@@ -18,6 +19,7 @@ export default function ComplexesScreen() {
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [roleInputs, setRoleInputs] = useState<Record<number, { userId: string; role: string }>>({});
   const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
@@ -28,8 +30,10 @@ export default function ComplexesScreen() {
   }, [authorized]);
 
   async function fetchComplexes() {
-    const { data } = await supabase.from('complexes').select('*');
-    if (data) setComplexes(data);
+    const { data } = await supabase
+      .from('complexes')
+      .select('id, name, complex_roles(user_id, role)');
+    if (data) setComplexes(data as Complex[]);
   }
 
   async function updateComplex(id: number) {
@@ -52,6 +56,22 @@ export default function ComplexesScreen() {
       .insert(newCode ? { name: newName, code: newCode } : { name: newName });
     setNewName('');
     setNewCode('');
+    fetchComplexes();
+  }
+
+  async function grantRole(id: number) {
+    const input = roleInputs[id];
+    if (!input?.userId || !input?.role) return;
+    await grantComplexRole(input.userId, id, input.role);
+    setRoleInputs((r) => ({ ...r, [id]: { userId: '', role: '' } }));
+    fetchComplexes();
+  }
+
+  async function revokeRole(id: number) {
+    const input = roleInputs[id];
+    if (!input?.userId) return;
+    await revokeComplexRole(input.userId, id);
+    setRoleInputs((r) => ({ ...r, [id]: { userId: '', role: '' } }));
     fetchComplexes();
   }
 
@@ -100,6 +120,46 @@ export default function ComplexesScreen() {
                 onPress={() => deleteComplex(item.id)}
               />
             </View>
+            <View style={styles.rolesSection}>
+              {item.complex_roles?.map((r) => (
+                <ThemedText key={r.user_id}>
+                  {r.user_id}: {r.role}
+                </ThemedText>
+              ))}
+              <StyledInput
+                style={styles.input}
+                placeholder="User ID"
+                value={roleInputs[item.id]?.userId ?? ''}
+                onChangeText={(text) =>
+                  setRoleInputs((s) => ({
+                    ...s,
+                    [item.id]: { ...(s[item.id] ?? { role: '' }), userId: text },
+                  }))
+                }
+              />
+              <StyledInput
+                style={styles.input}
+                placeholder="Role"
+                value={roleInputs[item.id]?.role ?? ''}
+                onChangeText={(text) =>
+                  setRoleInputs((s) => ({
+                    ...s,
+                    [item.id]: { ...(s[item.id] ?? { userId: '' }), role: text },
+                  }))
+                }
+              />
+              <View style={styles.actions}>
+                <AdminActionButton
+                  title="Grant"
+                  onPress={() => grantRole(item.id)}
+                />
+                <AdminActionButton
+                  title="Revoke"
+                  variant="danger"
+                  onPress={() => revokeRole(item.id)}
+                />
+              </View>
+            </View>
           </AdminListItem>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -138,4 +198,5 @@ const styles = StyleSheet.create({
   input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4, flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   separator: { height: 12 },
+  rolesSection: { marginTop: 8, gap: 4 },
 });
