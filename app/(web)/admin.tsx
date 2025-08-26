@@ -10,7 +10,7 @@ type Complex = { id: number; name: string };
 
 export default function AdminScreen() {
   const [complexes, setComplexes] = useState<Complex[]>([]);
-   const { authorized, loading } = useAuthorization(['admin']);
+   const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
     if (authorized) {

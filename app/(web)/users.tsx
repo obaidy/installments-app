@@ -12,7 +12,7 @@ import { AdminModal } from '../../components/admin/AdminModal';
 type UserRole = { user_id: string; role: string };
 
 export default function UsersAdminScreen() {
- const { authorized, loading } = useAuthorization(['admin']);
+  const { authorized, loading } = useAuthorization('admin');
   const [users, setUsers] = useState<UserRole[]>([]);
   const [editing, setEditing] = useState<Record<string, string>>({});
   const [confirmId, setConfirmId] = useState<string | null>(null);
