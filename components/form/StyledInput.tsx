@@ -48,7 +48,7 @@ export function StyledInput({
 
   return (
     <TextInput
-       style={[...inputStyles, style]}
+       style={[{ color: Colors[theme].text }, ...inputStyles, style]}
       placeholderTextColor={placeholderColor}
       onFocus={(e) => {
         setFocused(true);
