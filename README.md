@@ -74,6 +74,14 @@ tables together and the script uses `CREATE TABLE IF NOT EXISTS` to avoid
 duplicates. If you previously created older versions of these tables, drop them
 before running the updated SQL.
 
+Once the tables exist, apply the row level security policies:
+
+```bash
+supabase db execute --file supabase/policies.sql
+```
+
+These policies enable RLS on the `clients`, `units`, `installments`, and `payments` tables.
+
 
 ### Admin pages
 
