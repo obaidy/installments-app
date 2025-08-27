@@ -30,6 +30,7 @@ describe('supabaseClient auth helpers', () => {
     const result = await signUp('a@b.com', 'pass');
 
     expect(supabase.auth.signUp).toHaveBeenCalledWith({ email: 'a@b.com', password: 'pass' });
+    expect(supabase.from).toHaveBeenCalledWith('user_roles');
     expect(insertMock).toHaveBeenCalledWith({ user_id: '1', role: 'client' });
     expect(result).toEqual({ data: { user: { id: '1' } }, error: null, roleError: null });
   });
@@ -54,6 +55,7 @@ describe('supabaseClient auth helpers', () => {
     (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
 
     const role = await getCurrentUserRole();
+    expect(supabase.from).toHaveBeenCalledWith('user_roles');
     expect(selectMock).toHaveBeenCalledWith('role');
     expect(eqMock).toHaveBeenCalledWith('user_id', '1');
     expect(role).toBe('admin');

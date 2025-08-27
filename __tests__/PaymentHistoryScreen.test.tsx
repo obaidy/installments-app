@@ -36,7 +36,16 @@ describe('PaymentHistoryScreen', () => {
                 service_fee_id: null,
                 installments: { due_date: '2024-01-01' },
               },
-               ],
+               {
+                id: 2,
+                amount: 50,
+                status: 'paid',
+                paid_at: '2024-02-01',
+                installment_id: null,
+                service_fee_id: 5,
+                service_fees: { due_date: '2024-02-01' },
+              },
+            ],
             error: null,
           }),
         };
@@ -51,6 +60,8 @@ describe('PaymentHistoryScreen', () => {
       expect(getByText('Payment History')).toBeTruthy();
       expect(getByText(/Amount: 100/)).toBeTruthy();
       expect(getByText(/Type: Installment/)).toBeTruthy();
+      expect(getByText(/Amount: 50/)).toBeTruthy();
+      expect(getByText(/Type: Service Fee/)).toBeTruthy();
     });
   });
 });

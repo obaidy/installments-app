@@ -68,8 +68,9 @@ can execute the file in the Supabase SQL editor or with the CLI:
 supabase db execute --file supabase/schema.sql
 ```
 
-The script defines the user management tables along with `complexes`, `clients`,
-`units`, `installments`, `payments` and `subscriptions`. Foreign keys link these
+The script defines the user management tables along with `complexes`,
+`user_roles`, `user_complexes`, `units`, `installments`, `service_fees`,
+`payments` and `subscriptions`. Foreign keys link these
 tables together and the script uses `CREATE TABLE IF NOT EXISTS` to avoid
 duplicates. If you previously created older versions of these tables, drop them
 before running the updated SQL.
@@ -80,7 +81,8 @@ Once the tables exist, apply the row level security policies:
 supabase db execute --file supabase/policies.sql
 ```
 
-These policies enable RLS on the `clients`, `units`, `installments`, and `payments` tables.
+These policies enable RLS on the `user_roles`, `user_complexes`, `units`,
+`installments`, `service_fees`, and `payments` tables.
 
 
 ### Admin pages
