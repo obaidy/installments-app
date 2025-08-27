@@ -11,6 +11,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type Due = {
   id: number;
+  unit_id?: number;
   amount_iqd: number;
   due_date: string | null;
   paid: boolean;
@@ -31,7 +32,7 @@ export default function CheckoutScreen() {
       const table = type === 'service_fee' ? 'service_fees' : 'installments';
       const { data, error } = await supabase
         .from(table)
-        .select('*')
+        .select('id, unit_id, amount_iqd, due_date, paid')
         .eq('id', id)
         .single();
       setLoading(false);
@@ -52,13 +53,17 @@ export default function CheckoutScreen() {
     }
 
     try {
+      const metadata: Record<string, string> = { unit_id: String(due.unit_id || '') };
+      if (type === 'service_fee') metadata.service_fee_id = String(due.id);
+      else metadata.installment_id = String(due.id);
+
       const response = await fetch(`${API_URL}/payments/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountIQD: due.amount_iqd,
           description: type,
-          metadata: { targetId: due.id, targetType: type },
+          metadata,
         }),
       });
       const result = await response.json();

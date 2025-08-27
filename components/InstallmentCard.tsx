@@ -6,6 +6,7 @@ export type Installment = {
   unit_id: number;          // BIGINT -> number
   amount_iqd: number;
   due_date: string;         // ISO date string
+  type?: 'installment' | 'service_fee';
   paid?: boolean | null;    // optional (exists in DB)
   paid_at?: string | null;  // optional (exists in DB after our patch)
 };
@@ -41,6 +42,9 @@ export default function InstallmentCard({
         <Text style={{ fontSize: 16, fontWeight: '600' }}>{formatIQD(item.amount_iqd)}</Text>
         <StatusBadge status={status} />
       </View>
+      <Text style={{ color: '#6B7280' }}>
+        {item.type === 'service_fee' ? 'Service Fee' : 'Installment'}
+      </Text>
       <Text style={{ color: '#6B7280' }}>Due: {due.toDateString()}</Text>
       {!isPaid && (
         <TouchableOpacity

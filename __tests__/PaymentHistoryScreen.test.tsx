@@ -27,8 +27,16 @@ describe('PaymentHistoryScreen', () => {
           eq: jest.fn().mockReturnThis(),
           order: jest.fn().mockResolvedValue({
             data: [
-              { id: 1, amount: 100, status: 'paid', paid_at: '2024-01-01', due_date: '2024-01-01' },
-            ],
+              {
+                id: 1,
+                amount: 100,
+                status: 'paid',
+                paid_at: '2024-01-01',
+                installment_id: 1,
+                service_fee_id: null,
+                installments: { due_date: '2024-01-01' },
+              },
+               ],
             error: null,
           }),
         };
@@ -42,6 +50,7 @@ describe('PaymentHistoryScreen', () => {
     await waitFor(() => {
       expect(getByText('Payment History')).toBeTruthy();
       expect(getByText(/Amount: 100/)).toBeTruthy();
+      expect(getByText(/Type: Installment/)).toBeTruthy();
     });
   });
 });

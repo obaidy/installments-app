@@ -23,7 +23,7 @@ beforeEach(() => {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({
-      data: { id: 1, amount_iqd: 1000, due_date: null, paid: false },
+      data: { id: 1, unit_id: 1, amount_iqd: 1000, due_date: null, paid: false },
       error: null,
     }),
   });

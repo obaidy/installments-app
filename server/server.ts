@@ -54,30 +54,47 @@ export const webhookHandler: RequestHandler = async (req, res) => {
     const intent = event.data.object as Stripe.PaymentIntent;
 
     // Safely read metadata (may be undefined)
-    const unitId = intent.metadata?.unit_id ? Number(intent.metadata.unit_id) : undefined;
-    const installmentId = intent.metadata?.installment_id ? Number(intent.metadata.installment_id) : undefined;
-
+    const unitId = intent.metadata?.unit_id
+      ? Number(intent.metadata.unit_id)
+      : undefined;
+    const installmentId = intent.metadata?.installment_id
+      ? Number(intent.metadata.installment_id)
+      : undefined;
+    const serviceFeeId = intent.metadata?.service_fee_id
+      ? Number(intent.metadata.service_fee_id)
+      : undefined;
     const amount = intent.amount_received ?? intent.amount ?? 0;
     const status = mapStripeStatus(intent.status);
 
     // Upsert payment row if we have linkage data
-    if (unitId && installmentId) {
+    if (unitId && (installmentId || serviceFeeId)) {
       await supabase.from('payments').upsert({
         unit_id: unitId,
         installment_id: installmentId,
+        service_fee_id: serviceFeeId,
         amount: amount / 100,
         status,
         paid_at: status === 'paid' ? new Date().toISOString() : null,
       });
 
       if (status === 'paid') {
-        await supabase
-          .from('installments')
-          .update({
-            paid: true,
-            paid_at: new Date().toISOString(),
-          })
-          .eq('id', installmentId);
+        if (installmentId) {
+          await supabase
+            .from('installments')
+            .update({
+              paid: true,
+              paid_at: new Date().toISOString(),
+            })
+            .eq('id', installmentId);
+        } else if (serviceFeeId) {
+          await supabase
+            .from('service_fees')
+            .update({
+              paid: true,
+              paid_at: new Date().toISOString(),
+            })
+            .eq('id', serviceFeeId);
+        }
       }
     }
   }

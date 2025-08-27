@@ -9,6 +9,7 @@ type Payment = {
   status: string;
   paid_at: string | null;
   due_date: string | null;
+  type: 'installment' | 'service_fee';
 };
 
 export default function PaymentHistoryScreen() {
@@ -34,18 +35,31 @@ export default function PaymentHistoryScreen() {
 
     const { data, error } = await supabase
       .from('payments')
-      .select('*')
+      .select('id, amount, status, paid_at, installment_id, service_fee_id, installments(due_date), service_fees(due_date)')
       .in('unit_id', unitIds)
       .eq('status', 'paid')
       .order('paid_at', { ascending: false });
 
-    if (!error && data) setPayments(data as Payment[]);
+    if (!error && data) {
+      const mapped = (data as any[]).map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        status: p.status,
+        paid_at: p.paid_at,
+        due_date: p.installments?.due_date || p.service_fees?.due_date || null,
+        type: p.service_fee_id ? 'service_fee' : 'installment',
+      }));
+      setPayments(mapped);
+    }
   }
 
   function renderItem({ item }: { item: Payment }) {
     return (
       <View style={styles.item}>
         <ThemedText>Amount: {item.amount}</ThemedText>
+        <ThemedText>
+          Type: {item.type === 'service_fee' ? 'Service Fee' : 'Installment'}
+        </ThemedText>
         <ThemedText>
         Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
         </ThemedText>

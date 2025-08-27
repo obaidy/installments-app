@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '@/components/ThemedText';
+import { useRouter } from 'expo-router';
 
 type DueItem = {
   id: number;
+  unit_id: number;
   amount_iqd: number;
   due_date: string | null;
   paid: boolean;
+  type: 'installment' | 'service_fee';
 };
 
 export default function UpcomingInstallmentsScreen() {
   const [dues, setDues] = useState<DueItem[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDues();
@@ -25,7 +29,7 @@ export default function UpcomingInstallmentsScreen() {
 
     const { data, error } = await supabase
       .from('v_user_dues')
-      .select('*')
+      .select('id, unit_id, amount_iqd, due_date, paid, type')
       .eq('user_id', user.id)
       .order('due_date', { ascending: true });
 
@@ -34,19 +38,29 @@ export default function UpcomingInstallmentsScreen() {
 
   function renderItem({ item }: { item: DueItem }) {
     return (
-      <View style={styles.item}>
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() =>
+          router.push(
+            `/payments/checkout?id=${item.id}&type=${item.type}` as any,
+          )
+        }
+      >
+        <ThemedText>
+          {item.type === 'service_fee' ? 'Service Fee' : 'Installment'}
+        </ThemedText>
         <ThemedText>Amount: {item.amount_iqd}</ThemedText>
         <ThemedText>
           Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
         </ThemedText>
         <ThemedText>Paid: {item.paid ? 'Yes' : 'No'}</ThemedText>
-      </View>
+      </TouchableOpacity>
     );
   }
 
   return (
     <View style={styles.container}>
-      <ThemedText type="title">Upcoming Installments</ThemedText>
+      <ThemedText type="title">Upcoming Dues</ThemedText>
       <FlatList
         data={dues}
         keyExtractor={(item) => String(item.id)}

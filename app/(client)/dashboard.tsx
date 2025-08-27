@@ -18,14 +18,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
-        .from('installments')
-        .select('id, unit_id, amount_iqd, due_date, paid, paid_at')
+        .from('v_user_dues')
+        .select('id, unit_id, amount_iqd, due_date, paid, paid_at, type')
+        .eq('user_id', user.id)
         .order('due_date', { ascending: true })
         .limit(50);
 
       if (error) {
-        console.warn('installments fetch error:', error.message);
+        console.warn('dues fetch error:', error.message);
         return;
       }
 
@@ -53,17 +59,26 @@ export default function Dashboard() {
     })();
   }, []);
 
-  const handlePay = useCallback(async (i: Installment) => {
-    const { referenceId } = await createCheckout(
-      i.amount_iqd,
-      `Installment ${i.id}`,
-      { unit_id: String(i.unit_id), installment_id: String(i.id) } // metadata must be strings
-    );
+  const handlePay = useCallback(
+    async (i: Installment) => {
+      const metadata: Record<string, string> = {
+        unit_id: String(i.unit_id),
+      };
+      if (i.type === 'service_fee') metadata.service_fee_id = String(i.id);
+      else metadata.installment_id = String(i.id);
+
+      const { referenceId } = await createCheckout(
+        i.amount_iqd,
+        i.type === 'service_fee' ? `Service Fee ${i.id}` : `Installment ${i.id}`,
+        metadata,
+      );
 
     if (referenceId) {
-      router.push(`/(client)/payments/${encodeURIComponent(referenceId)}`);
-    }
-  }, [router]);
+        router.push(`/(client)/payments/${encodeURIComponent(referenceId)}`);
+      }
+    },
+    [router],
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>
