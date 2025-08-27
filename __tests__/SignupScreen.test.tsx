@@ -3,7 +3,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import SignupScreen from '../app/auth/signup';
 import { supabase } from '../lib/supabaseClient';
 import * as supabaseClient from '../lib/supabaseClient';
-import type { User, PostgrestSingleResponse } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 jest.mock('../Config', () => ({
   SUPABASE_URL: 'http://localhost',
@@ -18,6 +18,7 @@ jest.mock('expo-router', () => ({
 describe('SignupScreen', () => {
   let selectMock: jest.Mock;
   let inMock: jest.Mock;
+  let insertMock: jest.Mock;
 
   const mockUser: User = {
     id: '1',
@@ -27,13 +28,6 @@ describe('SignupScreen', () => {
     created_at: '2024-01-01T00:00:00.000Z',
   };
 
-  const mockGrantResponse: PostgrestSingleResponse<null> = {
-    data: null,
-    error: null,
-    count: null,
-    status: 201,
-    statusText: 'Created',
-  };
 
   beforeEach(() => {
     jest.spyOn(supabaseClient, 'signUp').mockResolvedValue({
@@ -42,10 +36,6 @@ describe('SignupScreen', () => {
       roleError: null,
     });
 
-    jest
-      .spyOn(supabaseClient, 'grantComplexRole')
-      .mockResolvedValue(mockGrantResponse);
-
     inMock = jest.fn().mockResolvedValue({
       data: [
         { id: 1, code: 'ABC' },
@@ -53,6 +43,8 @@ describe('SignupScreen', () => {
       ],
       error: null,
     });
+
+    insertMock = jest.fn().mockResolvedValue({ error: null });
 
     selectMock = jest.fn((cols: string) => {
       if (cols === 'code, name') {
@@ -70,6 +62,7 @@ describe('SignupScreen', () => {
 
     (supabase as any).from = jest.fn((table: string) => {
       if (table === 'complexes') return { select: selectMock };
+      if (table === 'user_complexes') return { insert: insertMock };
       return {} as any;
     });
   });
@@ -92,8 +85,8 @@ describe('SignupScreen', () => {
         'secret',
       );
       expect(inMock).toHaveBeenCalledWith('code', ['ABC', 'DEF']);
-      expect(supabaseClient.grantComplexRole).toHaveBeenCalledWith('1', 1, 'client');
-      expect(supabaseClient.grantComplexRole).toHaveBeenCalledWith('1', 2, 'client');
+      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 1 });
+      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 2 });
     });
   });
 
