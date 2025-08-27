@@ -14,15 +14,27 @@ type UserRole = { user_id: string; role: string };
 export default function UsersAdminScreen() {
   const { authorized, loading } = useAuthorization('admin');
   const [users, setUsers] = useState<UserRole[]>([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
   const [editing, setEditing] = useState<Record<string, string>>({});
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
 
   useEffect(() => {
     if (authorized) fetchUsers();
   }, [authorized]);
 
   async function fetchUsers() {
-    const { data } = await supabase.from('user_roles').select('user_id, role');
+    let q = supabase
+      .from('user_roles')
+      .select('user_id, role', { count: 'exact' })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (query) {
+      // Filter by role only; user_id is UUID and not ilike-friendly
+      q = q.ilike('role', `%${query}%`);
+    }
+    const { data } = await q;
     if (data) setUsers(data as UserRole[]);
   }
 
@@ -32,6 +44,7 @@ export default function UsersAdminScreen() {
     await supabase.from('user_roles').update({ role }).eq('user_id', id);
     setEditing((e) => ({ ...e, [id]: '' }));
     fetchUsers();
+    setBanner('Role updated. On next sign-in, the user will be redirected via /dashboard according to their role.');
   }
 
   async function deleteRole(id: string) {
@@ -57,6 +70,35 @@ export default function UsersAdminScreen() {
 
   return (
     <AdminLayout title="Users">
+      {banner && (
+        <AdminListItem>
+          <ThemedText>{banner}</ThemedText>
+          <ThemedText>
+            Tip: Share /dashboard with users — it routes to Admin, Manager, or Client dashboards automatically.
+          </ThemedText>
+          <View style={{ alignSelf: 'flex-end' }}>
+            <AdminActionButton title="Dismiss" onPress={() => setBanner(null)} />
+          </View>
+        </AdminListItem>
+      )}
+      <View style={styles.toolbar}>
+        <StyledInput
+          placeholder="Search by role…"
+          value={query}
+          onChangeText={setQuery}
+          style={{ flex: 1 }}
+          variant="filled"
+        />
+        <AdminActionButton title="Search" onPress={() => { setPage(0); fetchUsers(); }} />
+        <AdminActionButton
+          title="Prev"
+          onPress={() => { if (page > 0) { setPage(p => p - 1); fetchUsers(); } }}
+        />
+        <AdminActionButton
+          title="Next"
+          onPress={() => { setPage(p => p + 1); fetchUsers(); }}
+        />
+      </View>
       <FlatList
         data={users}
         keyExtractor={(item) => item.user_id}
@@ -64,6 +106,7 @@ export default function UsersAdminScreen() {
           <AdminListItem>
             <ThemedText style={styles.userId}>{item.user_id}</ThemedText>
             <StyledInput
+              variant="filled"
               style={styles.input}
               value={editing[item.user_id] ?? ''}
               placeholder={item.role}
@@ -113,8 +156,9 @@ export default function UsersAdminScreen() {
 
 const styles = StyleSheet.create({
   userId: { flex: 1 },
-  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4, flex: 1 },
+  input: { paddingHorizontal: 8, borderRadius: 8, flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   separator: { height: 12 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
 });

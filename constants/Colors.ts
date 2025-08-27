@@ -8,6 +8,7 @@ export const Colors = {
   light: {
      text: palette.light.text,
     background: palette.light.background,
+    surface: palette.light.surface,
     primary: palette.light.primary,
     secondary: palette.light.secondary,
     accent: palette.light.accent,
@@ -19,6 +20,7 @@ export const Colors = {
   dark: {
     text: palette.dark.text,
     background: palette.dark.background,
+    surface: palette.dark.surface,
     primary: palette.dark.primary,
     secondary: palette.dark.secondary,
     accent: palette.dark.accent,
@@ -30,4 +32,3 @@ export const Colors = {
 } as const;
 
 export type ColorTokens = keyof typeof Colors.light;
-

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
@@ -18,6 +18,9 @@ export default function ComplexesScreen() {
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
   const { authorized, loading } = useAuthorization('admin');
 
   useEffect(() => {
@@ -28,7 +31,13 @@ export default function ComplexesScreen() {
   }, [authorized]);
 
   async function fetchComplexes() {
-    const { data } = await supabase.from('complexes').select('id, name');
+    let q = supabase
+      .from('complexes')
+      .select('id, name', { count: 'exact' })
+      .order('name')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (query) q = q.ilike('name', `%${query}%`);
+    const { data } = await q;
     if (data) setComplexes(data as Complex[]);
   }
 
@@ -46,10 +55,36 @@ export default function ComplexesScreen() {
   }
 
   async function addComplex() {
-    if (!newName) return;
+    if (!newName) {
+      Alert.alert('Missing name', 'Please enter a complex name.');
+      return;
+    }
+    // Auto-generate a unique code from the name if not provided
+    let code = newCode?.trim();
+    if (!code) {
+      const base = newName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 24);
+      code = base || `complex-${Math.random().toString(36).slice(2, 6)}`;
+
+      // Ensure uniqueness by adding numeric suffix if needed
+      let attempt = 1;
+      // Fetch existing codes that start with base
+      const { data: existing } = await supabase
+        .from('complexes')
+        .select('code')
+        .ilike('code', `${base}%`);
+      const existingSet = new Set((existing || []).map((e: any) => String(e.code).toLowerCase()));
+      while (existingSet.has(code.toLowerCase())) {
+        attempt += 1;
+        code = `${base}-${attempt}`.slice(0, 28);
+      }
+    }
     await supabase
       .from('complexes')
-      .insert(newCode ? { name: newName, code: newCode } : { name: newName });
+      .insert({ name: newName, code });
     setNewName('');
     setNewCode('');
     fetchComplexes();
@@ -75,6 +110,18 @@ export default function ComplexesScreen() {
 
   return (
     <AdminLayout title="Complexes">
+      <View style={styles.toolbar}>
+        <StyledInput
+          placeholder="Search by name…"
+          value={query}
+          onChangeText={setQuery}
+          style={{ flex: 1 }}
+          variant="filled"
+        />
+        <AdminActionButton title="Search" onPress={() => { setPage(0); fetchComplexes(); }} />
+        <AdminActionButton title="Prev" onPress={() => { if (page > 0) { setPage(p => p - 1); fetchComplexes(); } }} />
+        <AdminActionButton title="Next" onPress={() => { setPage(p => p + 1); fetchComplexes(); }} />
+      </View>
       <AdminActionButton title="Add Complex" onPress={() => setModalVisible(true)} />
       <FlatList
         data={complexes}
@@ -83,6 +130,7 @@ export default function ComplexesScreen() {
           <AdminListItem>
             <ThemedText style={styles.name}>{item.name}</ThemedText>
             <StyledInput
+              variant="filled"
               style={styles.input}
               value={editing[item.id] ?? ''}
               placeholder="New name"
@@ -111,12 +159,14 @@ export default function ComplexesScreen() {
         title="New Complex"
       >
         <StyledInput
+          variant="filled"
           style={styles.input}
           placeholder="Name"
           value={newName}
           onChangeText={setNewName}
         />
         <StyledInput
+          variant="filled"
           style={styles.input}
           placeholder="Code (optional)"
           value={newCode}
@@ -136,7 +186,7 @@ export default function ComplexesScreen() {
 
 const styles = StyleSheet.create({
   name: { flex: 1 },
-  input: { height: 40, borderWidth: 1, paddingHorizontal: 8, borderRadius: 4, flex: 1 },
+  input: { paddingHorizontal: 8, borderRadius: 8, flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   separator: { height: 12 },
 });

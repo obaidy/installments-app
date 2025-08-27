@@ -2,10 +2,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableOpacityProps,
-  type ColorValue,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import type { ReactNode } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/ThemedText';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { palette, DesignTokens } from '../../constants/design';
@@ -15,11 +15,7 @@ export type PrimaryButtonProps = TouchableOpacityProps & {
    * Text displayed inside the button
    */
   title: string;
-  /**
-   * Optional array of at least two colors for a linear gradient background.
-   * When provided, the button will render a gradient instead of a solid color.
-   */
-  gradientColors?: [string, string, ...string[]];
+  style?: StyleProp<ViewStyle>;
 };
 
 export function PrimaryButton({
@@ -29,28 +25,23 @@ export function PrimaryButton({
   ...rest
 }: PrimaryButtonProps) {
   const theme = useColorScheme() ?? 'light';
-  const { primary, secondary } = palette[theme];
-
-  const colors: [ColorValue, ColorValue, ...ColorValue[]] =
-    gradientColors && gradientColors.length >= 2
-      ? gradientColors
-      : [primary, secondary, primary];
+  const { primary } = palette[theme];
 
   // Base styles applied to the TouchableOpacity regardless of background type
-  const buttonStyle = [styles.button, style];
-
-  let GradientBackground: ReactNode = (
-    <LinearGradient colors={colors} style={StyleSheet.absoluteFill} />
-  );
+  // Flatten to avoid nested arrays that can trip RN Web style application
+  const buttonStyle = StyleSheet.flatten([
+    styles.button,
+    { backgroundColor: String(primary) },
+    style,
+  ]);
 
   return (
     <TouchableOpacity
-      style={buttonStyle}
+      style={StyleSheet.flatten([buttonStyle, styles.relative])}
       activeOpacity={0.8}
       accessibilityRole="button"
       {...rest}
     >
-      {GradientBackground}
       <ThemedText type="defaultSemiBold" style={styles.text}>
         {title}
       </ThemedText>
@@ -59,6 +50,7 @@ export function PrimaryButton({
 }
 
 const styles = StyleSheet.create({
+  relative: { position: 'relative' },
   button: {
     paddingVertical: 14,
     paddingHorizontal: 20,

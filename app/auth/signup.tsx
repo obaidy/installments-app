@@ -12,25 +12,26 @@ export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [complexes, setComplexes] = useState<{ code: string; name: string }[]>([]);
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [complexes, setComplexes] = useState<{ id: number; name: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     supabase
       .from('complexes')
-      .select('code, name')
+      .select('id, name')
+      .order('name')
       .then(({ data }) => {
-        if (data) setComplexes(data);
+        if (data) setComplexes(data as any);
       });
   }, []);
 
 
   async function handleSignup() {
-    const codes = selectedCodes;
+    const ids = selectedIds;
   
-    if (codes.length === 0) {
+    if (ids.length === 0) {
       setError('Please select at least one complex.');
       return;
     }
@@ -43,40 +44,11 @@ export default function SignupScreen() {
   
     const userId = data.user?.id;
   
-    // ✅ Insert user role
-    // const { error: roleInsertError } = await supabase
-    //   .from('user_roles')
-    //   .insert({ user_id: userId, role: 'user' });
-  
-    // if (roleInsertError) {
-    //   setError(roleInsertError.message);
-    //   return;
-    // }
-  
-     // ✅ Proceed with user-complex association
     if (userId) {
-      const { data: existing, error: complexError } = await supabase
-        .from('complexes')
-        .select('id, code')
-        .in('code', codes);
-  
-      if (complexError) {
-        setError(complexError.message);
-        return;
-      }
-  
-      const existingMap = new Map((existing ?? []).map((c) => [c.code, c.id]));
-      const invalid = codes.filter((c) => !existingMap.has(c));
-      if (invalid.length > 0) {
-        setError('Complex code does not exist');
-        return;
-      }
-  
-      
-      for (const id of existingMap.values()) {
+      for (const complexId of ids) {
         const { error: linkError } = await supabase
           .from('user_complexes')
-          .insert({ user_id: userId, complex_id: id });
+          .insert({ user_id: userId, complex_id: complexId });
         if (linkError) {
           setError(linkError.message);
           return;
@@ -84,7 +56,7 @@ export default function SignupScreen() {
       }
     }
   
-    router.replace('/(tabs)');
+    router.replace('/dashboard');
   }
   
 
@@ -106,14 +78,14 @@ export default function SignupScreen() {
         onChangeText={setPassword}
         value={password}
       />
-     <Pressable
+      <Pressable
         style={styles.pickerToggle}
         onPress={() => setPickerOpen((o) => !o)}
       >
         <ThemedText>
-          {selectedCodes.length > 0
+          {selectedIds.length > 0
             ? `Selected: ${complexes
-                .filter((c) => selectedCodes.includes(c.code))
+                .filter((c) => selectedIds.includes(c.id))
                 .map((c) => c.name)
                 .join(', ')}`
             : 'Select Complexes'}
@@ -123,19 +95,19 @@ export default function SignupScreen() {
   <ScrollView style={styles.pickerContainer}>
     {complexes.map((c) => (
       <Pressable
-        key={c.code}
+        key={c.id}
         style={styles.pickerItem}
         onPress={() =>
-          setSelectedCodes((codes) =>
-            codes.includes(c.code)
-              ? codes.filter((cc) => cc !== c.code)
-              : [...codes, c.code],
+          setSelectedIds((ids) =>
+            ids.includes(c.id)
+              ? ids.filter((id) => id !== c.id)
+              : [...ids, c.id],
           )
         }
       >
         <MaterialIcons
           name={
-            selectedCodes.includes(c.code)
+            selectedIds.includes(c.id)
               ? 'check-box'
               : 'check-box-outline-blank'
           }

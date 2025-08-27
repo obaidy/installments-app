@@ -1,103 +1,85 @@
-# Welcome to your Expo app 👋
+# Installments App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+End-to-end installments management app built with Expo (React Native) and a lightweight Node/Express backend. It integrates Supabase for auth/data and supports payments via Stripe or a Qi-style provider.
 
-## Get started
+## Quick Start
 
-Make sure Node.js 18 is active by running `nvm use` or installing Node 18.
+- Node: use `nvm use` (Node 18). Expo SDK 53 supports Node 18/20.
+- Install: `npm install`
+- Env: `cp .env.example .env` and fill values (see docs/ENV.md)
+- Mobile: `npx expo start` (choose iOS/Android/Web)
+- API: `npm run start-server` (default `http://localhost:3001`)
 
-1. Install dependencies
+Set `EXPO_PUBLIC_API_URL` in `.env` so the app can reach the API.
 
-   ```bash
-   npm install
-   ```
-    **Note**: Expo SDK 53 currently supports Node.js versions 18 and 20. Other
-   versions may cause the CLI to fail.
+## Features
 
-2. Copy `.env.example` to `.env` and add your Supabase credentials and Stripe secrets
+- Auth and roles via Supabase
+- Admin dashboard for complexes, users, and units
+- Client flows for viewing installments and paying
+- Payments via Stripe or Qi (toggle with `USE_QI`)
+- Webhook handling to reconcile payments and update records
+- Scheduled charges script for due installments
 
-   ```bash
-   cp .env.example .env
-   ```
-   Then edit `.env` and replace the placeholder values for
-   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and optionally `APP_BASE_URL`.
-3. Start the app
+## Project Structure
 
+- `app/`: Expo Router screens (client + admin under `(web)`)
+- `components/`, `hooks/`, `lib/`: shared UI and utilities
+- `server/`: Express server, payments routes, and gateways
+- `scripts/`: maintenance/cron scripts (e.g., `schedule-charges.ts`)
+- `__tests__/`: unit/integration tests
 
-   ```bash
-   npx expo start
-   ```
+## Environment
 
-In the output, you'll find options to open the app in a
+See `docs/ENV.md` for all variables. Common ones:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_API_URL` (e.g., `http://localhost:3001`)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `USE_QI=1` to switch to Qi; also see `QI_*` vars
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Copy `.env.example` and adjust values for your environment.
 
-## Get a fresh project
+## Running
 
-When you're ready, run:
+- App: `npx expo start`
+- API: `npm run start-server`
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The mobile app calls the API at `${EXPO_PUBLIC_API_URL}` under `/payments/*`.
 
 ## Payments
 
-Start the backend server before using the checkout screen:
+Backend exposes a unified payments API with two gateways:
 
-```bash
-npm run start-server
-```
+- Stripe: default; requires `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+- Qi: set `USE_QI=1` and configure `QI_*` variables
 
- run via cron to bill tenants.
-Set `EXPO_PUBLIC_API_URL` in `.env` to the URL of this server. The mobile app will call `/payments/checkout` on this endpoint which uses the Stripe secrets from `.env`. `npm run schedule-charges` can still be run via cron to bill tenants.
+Endpoints and request/response examples are documented in `docs/API.md`.
 
+Webhook: configure Stripe to send events to `/payments/webhook`. The handler verifies the signature using `STRIPE_WEBHOOK_SECRET` and updates Supabase records accordingly.
+
+Scheduled charges: `npm run schedule-charges` charges due installments and marks records. Run via cron if needed.
 
 ## Supabase Schema
 
-SQL in `supabase/schema.sql` on your project to create the required schema. You
-can execute the file in the Supabase SQL editor or with the CLI:
+This app expects tables for `user_roles`, `user_complexes`, `complexes`, `units`, `installments`, `service_fees`, `payments`, and optionally `subscriptions` with appropriate foreign keys and RLS.
 
-```bash
-supabase db execute --file supabase/schema.sql
-```
+Note: SQL files are not included in this repo. Create the schema and RLS policies in your Supabase project following the table names above. If you previously created older versions, drop or migrate them before applying an updated schema.
 
-The script defines the user management tables along with `complexes`,
-`user_roles`, `user_complexes`, `units`, `installments`, `service_fees`,
-`payments` and `subscriptions`. Foreign keys link these
-tables together and the script uses `CREATE TABLE IF NOT EXISTS` to avoid
-duplicates. If you previously created older versions of these tables, drop them
-before running the updated SQL.
+## Admin Pages
 
-Once the tables exist, apply the row level security policies:
+Admin UI lives in `app/(web)`. Visit `/(web)` to access users, complexes, and units management. Pages require the admin role and use `useAuthorization` to restrict access.
 
-```bash
-supabase db execute --file supabase/policies.sql
-```
+## Scripts
 
-These policies enable RLS on the `user_roles`, `user_complexes`, `units`,
-`installments`, `service_fees`, and `payments` tables.
+- `npm run start-server`: start Express API on port 3001
+- `npm run schedule-charges`: charge due installments via Stripe
+- `npm run reset-project`: reset example app scaffolding
 
+## Development
 
-### Admin pages
+- Lint: `npm run lint`
+- Tests: `npm test`
+- TypeScript: enabled across mobile + server
 
-Admin functionality lives in the `(web)` directory. Visit `/(web)` to access the dashboard with links to `users`, `complexes` and `units` management screens. These pages require the admin role and use `useAuthorization` to block unauthorized users.
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+For more, see `docs/ARCHITECTURE.md` and `CONTRIBUTING.md`.

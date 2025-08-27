@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Original-but-Stripe-ish theme */
+  /* Picked primary: #6257F7 (saturated indigo, 245° range) */
+  --background: 210 60% 98%; /* ~#F7FAFD */
+  --foreground: 210 80% 14%; /* ~#0A2742 */
+  --card: 0 0% 100%;
+  --card-foreground: 210 80% 14%;
+  --muted: 210 16% 90%;
+  --muted-foreground: 215 12% 45%;
+  --border: 210 16% 86%;
+  --input: 210 16% 86%;
+  --ring: 245 92% 65%;
+  --primary: 245 92% 65%; /* #6257F7 */
+  --primary-foreground: 0 0% 100%;
+  --accent: 265 92% 66%; /* violet-ish for gradient end */
+}
+
+.dark {
+  --background: 213 80% 8%; /* deep navy */
+  --foreground: 210 40% 96%;
+  --card: 215 45% 12%;
+  --card-foreground: 210 40% 96%;
+  --muted: 220 15% 20%;
+  --muted-foreground: 220 15% 70%;
+  --border: 220 15% 25%;
+  --input: 220 15% 25%;
+  --ring: 245 92% 65%;
+  --primary: 245 92% 65%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 265 92% 66%;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.kpi-gradient {
+  background-image: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+}
+

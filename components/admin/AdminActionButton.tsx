@@ -10,7 +10,8 @@ export type AdminActionButtonProps = PrimaryButtonProps & {
 
 export function AdminActionButton({ variant = 'default', style, ...rest }: AdminActionButtonProps) {
   const theme = useColorScheme() ?? 'light';
-  const backgroundColor =
-    variant === 'danger' ? '#d9534f' : Colors[theme].tint;
-  return <PrimaryButton {...rest} style={[{ backgroundColor }, style]} />;
+  if (variant === 'danger') {
+    return <PrimaryButton {...rest} style={[{ backgroundColor: '#EF4444' }, style]} />;
+  }
+  return <PrimaryButton {...rest} style={style} />;
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { PrimaryButton } from '@/components/form/PrimaryButton';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
+import { MetricCard } from '@/components/admin/MetricCard';
 
 interface UnitWithDue {
   id: number;
@@ -48,8 +49,12 @@ export default function HomeDashboard() {
 
   return (
     <View style={styles.container}>
-    <ThemedText type="title">My Units</ThemedText>
-    <ThemedText>Total Due Now: {totalDue}</ThemedText>
+    <ThemedText type="title">My Dashboard</ThemedText>
+    <View style={styles.metricsRow}>
+      <MetricCard label="Total Due" value={totalDue} />
+      <MetricCard label="Units" value={units.length} />
+    </View>
+    <ThemedText type="subtitle">My Units</ThemedText>
     <FlatList
       data={units}
       keyExtractor={(item) => String(item.id)}
@@ -74,6 +79,7 @@ export default function HomeDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 12 },
-  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4 },
+  item: { padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff' },
   separator: { height: 10 },
+  metricsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 });

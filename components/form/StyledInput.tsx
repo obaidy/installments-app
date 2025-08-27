@@ -26,7 +26,8 @@ export function StyledInput({
 }: StyledInputProps) {
   const theme = useColorScheme() ?? 'light';
   const [focused, setFocused] = useState(false);
-  const placeholderColor = `${Colors[theme].text}${DesignTokens.placeholderColor}`;
+  // Improve contrast by using the 'icon' color for placeholders
+  const placeholderColor = Colors[theme].icon;
   const inputStyles: ViewStyle[] = [
     styles.input,
     {

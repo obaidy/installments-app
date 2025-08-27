@@ -1,19 +1,23 @@
 export const palette = {
   light: {
-    background: '#f8fafc',
-    text: '#1f2937',
-    primary: '#1d4ed8',
-    secondary: '#9333ea',
-    accent: '#0f766e',
-    icon: '#475569',
+    // Stripe-inspired light palette
+    background: '#F6F9FC',
+    surface: '#FFFFFF',
+    text: '#0A2540',
+    primary: '#635BFF',
+    secondary: '#00D4FF',
+    accent: '#7A5AF8',
+    icon: '#6B7280',
   },
   dark: {
-    background: '#0f172a',
-    text: '#f9fafb',
-    primary: '#60a5fa',
-    secondary: '#c084fc',
-    accent: '#2dd4bf',
-    icon: '#9ca3af',
+    // Stripe-inspired dark palette
+    background: '#0A2540',
+    surface: '#111827',
+    text: '#F8FAFC',
+    primary: '#635BFF',
+    secondary: '#00D4FF',
+    accent: '#22D3EE',
+    icon: '#9CA3AF',
   },
 },
 DesignTokens = {

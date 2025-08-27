@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
 import { AdminActionButton } from '../../components/admin/AdminActionButton';
@@ -11,19 +11,38 @@ import { AdminListItem } from '../../components/admin/AdminListItem';
 
 type Unit = { id: number; name: string; complex_id: number };
 
+type Complex = { id: number; name: string };
+
 export default function UnitsAdminScreen() {
   const { complexId } = useLocalSearchParams<{ complexId?: string }>();
   const parsedId = complexId ? parseInt(complexId, 10) : null;
-  const { authorized, loading } = useAuthorization('manager');
+  const { authorized, loading } = useAuthorization(['manager', 'admin']);
   const [units, setUnits] = useState<Unit[]>([]);
   const [editing, setEditing] = useState<Record<number, string>>({});
+  const [complexes, setComplexes] = useState<Complex[]>([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
 
   useEffect(() => {
-    if (authorized && parsedId !== null) fetchUnits(parsedId);
+    if (!authorized) return;
+    if (parsedId !== null) {
+      fetchUnits(parsedId);
+    } else {
+      // Load complexes so an admin can choose one when none is selected
+      fetchComplexes();
+    }
   }, [authorized, parsedId]);
 
   async function fetchUnits(id: number) {
-    const { data } = await supabase.from('units').select('*').eq('complex_id', id);
+    let q = supabase
+      .from('units')
+      .select('*', { count: 'exact' })
+      .eq('complex_id', id)
+      .order('name')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (query) q = q.ilike('name', `%${query}%`);
+    const { data } = await q;
     if (data) setUnits(data as Unit[]);
   }
 
@@ -33,7 +52,7 @@ export default function UnitsAdminScreen() {
       await supabase.from('units').update({ name }).eq('id', id);
       setEditing((e) => ({ ...e, [id]: '' }));
       fetchUnits(parsedId);
-    }
+  }
 
   async function deleteUnit(id: number) {
       if (parsedId === null) return;
@@ -49,6 +68,11 @@ export default function UnitsAdminScreen() {
     );
   }
 
+  async function fetchComplexes() {
+    const { data } = await supabase.from('complexes').select('id, name').order('name');
+    if (data) setComplexes(data as Complex[]);
+  }
+
   if (loading) {
     return (
       <AdminLayout title="Units">
@@ -60,7 +84,21 @@ export default function UnitsAdminScreen() {
   if (parsedId === null) {
     return (
       <AdminLayout title="Units">
-        <ThemedText>No complex selected</ThemedText>
+        <ThemedText>Select a complex to manage its units:</ThemedText>
+        <FlatList
+          data={complexes}
+          keyExtractor={(c) => String(c.id)}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={({ item }) => (
+            <AdminListItem>
+              <ThemedText style={styles.name}>{item.name}</ThemedText>
+              <AdminActionButton
+                title="View Units"
+                onPress={() => router.replace(`/(web)/units?complexId=${item.id}`)}
+              />
+            </AdminListItem>
+          )}
+        />
       </AdminLayout>
     );
   }
@@ -68,6 +106,18 @@ export default function UnitsAdminScreen() {
 
   return (
     <AdminLayout title="Units">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <StyledInput
+          placeholder="Search by name…"
+          value={query}
+          onChangeText={setQuery}
+          style={{ flex: 1 }}
+          variant="filled"
+        />
+        <AdminActionButton title="Search" onPress={() => { setPage(0); if (parsedId !== null) fetchUnits(parsedId); }} />
+        <AdminActionButton title="Prev" onPress={() => { if (page > 0 && parsedId !== null) { setPage(p => p - 1); fetchUnits(parsedId); } }} />
+        <AdminActionButton title="Next" onPress={() => { if (parsedId !== null) { setPage(p => p + 1); fetchUnits(parsedId); } }} />
+      </View>
       <FlatList
         data={units}
         keyExtractor={(item) => String(item.id)}
