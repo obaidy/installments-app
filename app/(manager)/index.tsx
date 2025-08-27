@@ -28,9 +28,8 @@ export default function ManagerDashboard() {
         .eq('user_id', user.id);
 
       if (data) {
-        setComplexes(
-          data.map((entry) => entry.complexes) as ManagedComplex[],
-        );
+        const complexes = data.flatMap(entry => entry.complexes) as ManagedComplex[];
+        setComplexes(complexes);
       }
 
       setLoading(false);
