@@ -1,4 +1,4 @@
-import { supabase, grantComplexRole } from './supabaseClient';
+import { supabase } from './supabaseClient';
 
 export async function insertComplexesFromInput(
   codesInput: string,
@@ -27,12 +27,10 @@ export async function insertComplexesFromInput(
   if (invalid.length > 0) return 'Complex code does not exist';
 
   for (const id of existingMap.values()) {
-    const { error: roleError } = await grantComplexRole(
-      user.id,
-      id,
-      'client',
-    );
-    if (roleError) return roleError.message;
+    const { error: linkError } = await supabase
+      .from('user_complexes')
+      .insert({ user_id: user.id, complex_id: id });
+    if (linkError) return linkError.message;
   }
 
   return null;

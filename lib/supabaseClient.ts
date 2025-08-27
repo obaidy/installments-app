@@ -51,43 +51,12 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
 export const grantAdminRole = (userId: string) =>
   supabase.from('user_roles').upsert({ user_id: userId, role: 'admin' });
 
-export const grantManagerRole = (userId: string, complexId: number) =>
-  supabase
-    .from('complex_roles')
-    .upsert({ user_id: userId, complex_id: complexId, role: 'manager' });
+export const addUserToComplex = (userId: string, complexId: number) =>
+  supabase.from('user_complexes').insert({ user_id: userId, complex_id: complexId });
 
-export const grantComplexRole = (
-  userId: string,
-  complexId: number,
-  role: string,
-) =>
+export const removeUserFromComplex = (userId: string, complexId: number) =>
   supabase
-    .from('complex_roles')
-    .upsert({ user_id: userId, complex_id: complexId, role });
-
-export const revokeComplexRole = (userId: string, complexId: number) =>
-  supabase
-    .from('complex_roles')
+    .from('user_complexes')
     .delete()
     .eq('user_id', userId)
     .eq('complex_id', complexId);
-
-export const getUserComplexRole = async (
-  complexId: number,
-): Promise<string | null> => {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error || !user) return null;
-
-  const { data, error: roleError } = await supabase
-    .from('complex_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('complex_id', complexId)
-    .single();
-
-  if (roleError || !data) return null;
-  return data.role as string;
-};

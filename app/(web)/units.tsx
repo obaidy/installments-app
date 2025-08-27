@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
-import useComplexAuthorization from '../../hooks/useComplexAuthorization';
+import useAuthorization from '../../hooks/useAuthorization';
 import { useLocalSearchParams } from 'expo-router';
 import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
@@ -14,7 +14,7 @@ type Unit = { id: number; name: string; complex_id: number };
 export default function UnitsAdminScreen() {
   const { complexId } = useLocalSearchParams<{ complexId?: string }>();
   const parsedId = complexId ? parseInt(complexId, 10) : null;
-  const { authorized, loading } = useComplexAuthorization(parsedId, 'manager');
+  const { authorized, loading } = useAuthorization('manager');
   const [units, setUnits] = useState<Unit[]>([]);
   const [editing, setEditing] = useState<Record<number, string>>({});
 

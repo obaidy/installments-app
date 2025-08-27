@@ -5,7 +5,7 @@ import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import { signUp, supabase, grantComplexRole } from '../../lib/supabaseClient';
+import { signUp, supabase } from '../../lib/supabaseClient';
 import { Layout } from '../../constants/Layout';
 
 export default function SignupScreen() {
@@ -74,13 +74,11 @@ export default function SignupScreen() {
   
       
       for (const id of existingMap.values()) {
-        const { error: roleError } = await grantComplexRole(
-          userId,
-          id,
-          'client',
-        );
-        if (roleError) {
-          setError(roleError.message);
+        const { error: linkError } = await supabase
+          .from('user_complexes')
+          .insert({ user_id: userId, complex_id: id });
+        if (linkError) {
+          setError(linkError.message);
           return;
         }
       }

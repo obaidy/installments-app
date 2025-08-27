@@ -4,7 +4,7 @@ import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { supabase } from '../../lib/supabaseClient';
-import useComplexAuthorization from '../../hooks/useComplexAuthorization';
+import useAuthorization from '../../hooks/useAuthorization';
 
 type ManagedComplex = { id: number; name: string };
 
@@ -14,40 +14,15 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     async function fetchComplexes() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from('complex_roles')
-        .select('complex_id, complexes(name)')
-        .eq('user_id', user.id)
-        .eq('role', 'manager');
-
-      if (data) {
-        setComplexes(
-          data.map((r: any) => ({
-            id: r.complex_id,
-            name: r.complexes?.name ?? `Complex ${r.complex_id}`,
-          }))
-        );
-      }
-
+      const { data } = await supabase.from('complexes').select('id, name');
+      if (data) setComplexes(data as ManagedComplex[]);
       setLoading(false);
     }
 
     fetchComplexes();
   }, []);
 
-  const firstComplexId = complexes.length > 0 ? complexes[0].id : null;
-  const { authorized, loading: authLoading } = useComplexAuthorization(
-    firstComplexId,
-    'manager'
-  );
+  const { authorized, loading: authLoading } = useAuthorization('manager');
 
   if (loading || authLoading) {
     return (
