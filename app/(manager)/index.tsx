@@ -14,8 +14,25 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     async function fetchComplexes() {
-      const { data } = await supabase.from('complexes').select('id, name');
-      if (data) setComplexes(data as ManagedComplex[]);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('user_complexes')
+        .select('complexes ( id, name )')
+        .eq('user_id', user.id);
+
+      if (data) {
+        setComplexes(
+          data.map((entry) => entry.complexes) as ManagedComplex[],
+        );
+      }
+
       setLoading(false);
     }
 
