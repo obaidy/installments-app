@@ -41,7 +41,7 @@ export default function PaymentHistoryScreen() {
       .order('paid_at', { ascending: false });
 
     if (!error && data) {
-      const mapped = (data as any[]).map((p) => ({
+      const mapped = (data as any[]).map((p): Payment => ({
         id: p.id,
         amount: p.amount,
         status: p.status,
@@ -49,7 +49,9 @@ export default function PaymentHistoryScreen() {
         due_date: p.installments?.due_date || p.service_fees?.due_date || null,
         type: p.service_fee_id ? 'service_fee' : 'installment',
       }));
+
       setPayments(mapped);
+
     }
   }
 
