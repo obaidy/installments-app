@@ -32,27 +32,38 @@ export async function main() {
         { unit_id: inst.unit_id, installment_id: inst.id },
       );
 
-      const succeeded = intent.status === 'succeeded';
-      const status: PaymentStatus = succeeded ? 'paid' : 'failed';
+       const status: PaymentStatus = ((): PaymentStatus => {
+        switch (intent.status) {
+          case 'succeeded':
+            return 'paid';
+          case 'processing':
+            return 'pending';
+          case 'canceled':
+            return 'cancelled';
+          case 'requires_payment_method':
+            return 'failed';
+          default:
+            return 'failed';
+        }
+      })();
 
       await supabase.from('payments').insert({
         unit_id: inst.unit_id,
         installment_id: inst.id,
         amount,
         status,
-        paid_at: succeeded ? new Date().toISOString() : null,
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
       });
 
-      
       await supabase
         .from('installments')
         .update({
-          paid: succeeded,
-          paid_at: succeeded ? new Date().toISOString() : null,
+          paid: status === 'paid',
+          paid_at: status === 'paid' ? new Date().toISOString() : null,
         })
         .eq('id', inst.id);
 
-      if (!succeeded) {
+      if (status !== 'paid') {
         failures++;
         console.error(
           `❌ Charge failed for installment ${inst.id}: ${intent.status}`,

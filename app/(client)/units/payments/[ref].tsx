@@ -6,7 +6,7 @@ import { getPaymentStatus } from '../../../../lib/api/payments';
 
 export default function PaymentStatusScreen() {
 const { ref } = useLocalSearchParams<{ ref: string }>();
-const [status, setStatus] = useState<'pending'|'succeeded'|'failed'|'canceled'>('pending');
+const [status, setStatus] = useState<'pending'|'paid'|'failed'|'cancelled'>('pending');
 
 
 useEffect(() => {
@@ -28,9 +28,9 @@ return (
 <ActivityIndicator />
 <Text style={{ marginTop: 12 }}>Processing payment…</Text>
 </>)}
-{status === 'succeeded' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#166534' }}>Payment succeeded ✅</Text>}
+{status === 'paid' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#166534' }}>Payment succeeded ✅</Text>}
 {status === 'failed' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#991B1B' }}>Payment failed ❌</Text>}
-{status === 'canceled' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#374151' }}>Payment canceled</Text>}
+{status === 'cancelled' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#374151' }}>Payment cancelled</Text>}
 </View>
 );
 }

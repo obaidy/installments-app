@@ -11,12 +11,12 @@ returnUrl?: string;
 };
 
 
-type Status = "pending" | "succeeded" | "failed" | "canceled";
+type Status = 'pending' | 'paid' | 'failed' | 'cancelled';
 
 
 export type PaymentGateway = {
 createIntent(p: PaymentIntentPayload): Promise<{ ok: true; redirectUrl?: string; referenceId?: string } | { ok: false; error: string }>;
-getStatus(referenceId: string): Promise<Status>;
+  getStatus(referenceId: string): Promise<Status>;
 refund(referenceId: string, amountIQD?: number): Promise<boolean>;
 };
 
@@ -49,12 +49,12 @@ async getStatus(referenceId) {
 const headers = buildQiHeaders("GET", `/payments/${referenceId}/status`, undefined, QI_PUBLIC_KEY_ID);
 const r = await fetch(`${QI_BASE}/payments/${referenceId}/status`, { headers });
 const d: any = await r.json();
-const s = (d?.status || "").toUpperCase();
-if (s === "APPROVED" || s === "CONFIRMED") return "succeeded";
-if (s === "CANCELLED") return "canceled";
-if (s === "DECLINED") return "failed";
-return "pending";
-},
+   const s = (d?.status || '').toUpperCase();
+    if (s === 'APPROVED' || s === 'CONFIRMED') return 'paid';
+    if (s === 'CANCELLED') return 'cancelled';
+    if (s === 'DECLINED') return 'failed';
+    return 'pending';
+  },
 
 
 async refund(referenceId, amountIQD) {

@@ -22,5 +22,5 @@ return data as { ok: true; redirectUrl?: string; referenceId?: string };
 export async function getPaymentStatus(referenceId: string) {
 const r = await fetch(`${API_BASE}/payments/status/${referenceId}`);
 const d = await r.json();
-return d.status as 'pending' | 'succeeded' | 'failed' | 'canceled';
+return d.status as 'pending' | 'paid' | 'failed' | 'cancelled';
 }

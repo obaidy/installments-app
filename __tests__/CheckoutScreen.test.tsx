@@ -14,7 +14,7 @@ jest.mock('../components/Toast', () => ({
 beforeEach(() => {
   (global as any).fetch = jest.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ status: 'succeeded' }),
+    json: async () => ({ status: 'paid' }),
   });
   (supabase as any).auth = {
     getUser: jest.fn().mockResolvedValue({ data: { user: { email: 'a@test.com' } }, error: null }),

@@ -11,9 +11,9 @@ returnUrl?: string;
 
 
 export type PaymentGateway = {
-createIntent(p: PaymentIntentPayload): Promise<{ ok: true; redirectUrl?: string; referenceId?: string } | { ok: false; error: string }>;
-getStatus(referenceId: string): Promise<"pending" | "succeeded" | "failed" | "canceled">;
-refund(referenceId: string, amountIQD?: number): Promise<boolean>;
+  createIntent(p: PaymentIntentPayload): Promise<{ ok: true; redirectUrl?: string; referenceId?: string } | { ok: false; error: string }>;
+  getStatus(referenceId: string): Promise<'pending' | 'paid' | 'failed' | 'cancelled'>;
+  refund(referenceId: string, amountIQD?: number): Promise<boolean>;
 };
 
 
@@ -37,12 +37,13 @@ return { ok: true as const, referenceId: pi.id };
 
 
 async getStatus(referenceId) {
-const pi = await stripe.paymentIntents.retrieve(referenceId);
-if (pi.status === "succeeded") return "succeeded";
-if (pi.status === "canceled") return "canceled";
-if (pi.status === "requires_payment_method") return "failed";
-return "pending";
-},
+    const pi = await stripe.paymentIntents.retrieve(referenceId);
+    if (pi.status === 'succeeded') return 'paid';
+    if (pi.status === 'processing') return 'pending';
+    if (pi.status === 'canceled') return 'cancelled';
+    if (pi.status === 'requires_payment_method') return 'failed';
+    return 'pending';
+  },
 
 
 async refund(referenceId) {

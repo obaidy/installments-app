@@ -8,10 +8,27 @@ import { stripe } from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseClient';
 
 // ⬇️ New: unified payments router (provides /payments/checkout and /payments/status/:ref)
-import paymentsRouter from './routes/payments'; 
+import paymentsRouter from './routes/payments';
 
 export const app = express();
 app.use(cors());
+
+function mapStripeStatus(
+  status: string,
+): 'paid' | 'pending' | 'failed' | 'cancelled' {
+  switch (status) {
+    case 'succeeded':
+      return 'paid';
+    case 'processing':
+      return 'pending';
+    case 'requires_payment_method':
+      return 'failed';
+    case 'canceled':
+      return 'cancelled';
+    default:
+      return 'pending';
+  }
+}
 
 /**
  * IMPORTANT: Stripe webhook must use raw body and be registered
@@ -40,7 +57,8 @@ export const webhookHandler: RequestHandler = async (req, res) => {
     const unitId = intent.metadata?.unit_id ? Number(intent.metadata.unit_id) : undefined;
     const installmentId = intent.metadata?.installment_id ? Number(intent.metadata.installment_id) : undefined;
 
-    const amount = (intent.amount_received ?? intent.amount ?? 0);
+    const amount = intent.amount_received ?? intent.amount ?? 0;
+    const status = mapStripeStatus(intent.status);
 
     // Upsert payment row if we have linkage data
     if (unitId && installmentId) {
@@ -48,14 +66,17 @@ export const webhookHandler: RequestHandler = async (req, res) => {
         unit_id: unitId,
         installment_id: installmentId,
         amount: amount / 100,
-        status: intent.status,
-        paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+        status,
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
       });
 
-      if (intent.status === 'succeeded') {
+      if (status === 'paid') {
         await supabase
           .from('installments')
-          .update({ paid: true })
+          .update({
+            paid: true,
+            paid_at: new Date().toISOString(),
+          })
           .eq('id', installmentId);
       }
     }
