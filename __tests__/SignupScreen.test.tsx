@@ -3,7 +3,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import SignupScreen from '../app/auth/signup';
 import { supabase } from '../lib/supabaseClient';
 import * as supabaseClient from '../lib/supabaseClient';
-import type { PostgrestSingleResponse } from '@supabase/supabase-js';
+import type { User, PostgrestSingleResponse } from '@supabase/supabase-js';
 
 jest.mock('../Config', () => ({
   SUPABASE_URL: 'http://localhost',
@@ -18,6 +18,15 @@ jest.mock('expo-router', () => ({
 describe('SignupScreen', () => {
   let selectMock: jest.Mock;
   let inMock: jest.Mock;
+
+  const mockUser: User = {
+    id: '1',
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: '2024-01-01T00:00:00.000Z',
+  };
+
   const mockGrantResponse: PostgrestSingleResponse<null> = {
     data: null,
     error: null,
@@ -26,36 +35,9 @@ describe('SignupScreen', () => {
     statusText: 'Created',
   };
 
-  import type { User, PostgrestSingleResponse } from '@supabase/supabase-js';
-
-const mockUser: User = {
-  id: '1',
-  app_metadata: {},
-  user_metadata: {},
-  aud: 'authenticated',
-  created_at: '2024-01-01T00:00:00.000Z',
-};
-
-const mockGrantResponse: PostgrestSingleResponse<null> = {
-  data: null,
-  error: null,
-  count: null,
-  status: 201,
-  statusText: 'Created',
-};
-
-beforeEach(() => {
-  jest.spyOn(supabaseClient, 'signUp').mockResolvedValue({
-    data: { user: mockUser, session: null },
-    error: null,
-    roleError: null,
-  });
-
-  jest.spyOn(supabaseClient, 'grantComplexRole').mockResolvedValue(mockGrantResponse);
-
   beforeEach(() => {
     jest.spyOn(supabaseClient, 'signUp').mockResolvedValue({
-      data: { user: { id: '1' }, session: null },
+       data: { user: mockUser, session: null },
       error: null,
       roleError: null,
     });
