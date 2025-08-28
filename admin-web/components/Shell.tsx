@@ -8,12 +8,12 @@ import { t } from '@/lib/i18n'
 
 const nav = [
   { href: '/', key: 'dashboard' as const, icon: '📊' },
-  { href: '/(routes)/complexes', key: 'complexes' as const, icon: '🏢' },
-  { href: '/(routes)/units', key: 'units' as const, icon: '🏠' },
-  { href: '/(routes)/installments', key: 'installments' as const, icon: '🧾' },
-  { href: '/(routes)/service-fees', key: 'serviceFees' as const, icon: '🛠️' },
-  { href: '/(routes)/payments', key: 'payments' as const, icon: '💸' },
-  { href: '/(routes)/users', key: 'users' as const, icon: '👤' },
+  { href: '/complexes', key: 'complexes' as const, icon: '🏢' },
+  { href: '/units', key: 'units' as const, icon: '🏠' },
+  { href: '/installments', key: 'installments' as const, icon: '🧾' },
+  { href: '/service-fees', key: 'serviceFees' as const, icon: '🛠️' },
+  { href: '/payments', key: 'payments' as const, icon: '💸' },
+  { href: '/users', key: 'users' as const, icon: '👤' },
 ]
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -34,11 +34,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 className={cn('relative block px-3 py-2 rounded-md transition transform hover:scale-[0.99]', active ? 'bg-white/15 ring-1 ring-white/20' : 'hover:bg-white/10')}
               >
                 <span className="inline-flex items-center gap-2">
-                  <span>{n.icon}</span>
-                  <span><span className="inline-flex items-center gap-2">
-                      <span>{n.icon}</span>
-                      <span>{t(locale, n.key)}</span>
-                    </span></span>
+                  <span aria-hidden>{n.icon}</span>
+                  <span>{t(locale, n.key)}</span>
                 </span>
                 {active ? <span className={cn('absolute top-1/2 -translate-y-1/2 h-5 w-1 bg-white/70 rounded', rtl ? 'right-0' : 'left-0')} /> : null}
               </Link>

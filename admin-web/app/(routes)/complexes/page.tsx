@@ -18,9 +18,31 @@ export default function ComplexesPage() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [tempName, setTempName] = useState('')
+  const [confirmId, setConfirmId] = useState<number | null>(null)
 
   const columns: Column<Complex>[] = [
-    { key: 'name', label: 'Name', render: (r) => <span>🏢 {r.name}</span> },
+    { key: 'name', label: 'Name', render: (r) => (
+      editingId === r.id ? (
+        <span className="inline-flex items-center gap-2">
+          <span>🏢</span>
+          <input autoFocus className="rounded-md border border-input bg-background px-2 py-1 text-sm" value={tempName} onChange={(e) => setTempName(e.target.value)} />
+          <button className="px-2 py-1 text-sm rounded-md border border-border" onClick={() => {
+            if (!tempName.trim()) return;
+            setRows(rs => rs.map(x => x.id === r.id ? { ...x, name: tempName.trim() } : x));
+            setEditingId(null);
+          }}>Save</button>
+          <button className="px-2 py-1 text-sm rounded-md border border-border" onClick={() => setEditingId(null)}>Cancel</button>
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-2">
+          <span>🏢</span>
+          <span>{r.name}</span>
+          <button className="px-2 py-0.5 text-xs rounded-md border border-border" onClick={() => { setEditingId(r.id); setTempName(r.name); }}>Edit</button>
+        </span>
+      )
+    ) },
     { key: 'code', label: 'Code', render: (r) => <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs bg-muted/30">{r.code}</span> },
     { key: 'units', label: 'Units', width: '120px', render: (r) => <span className="opacity-80">{r.units} units</span> },
     {
@@ -30,7 +52,7 @@ export default function ComplexesPage() {
       render: (r) => (
         <div className="flex gap-2">
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setName(r.name); setCode(r.code); setOpen(true); }}>Edit</button>
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setRows((rs) => rs.filter(x => x.id !== r.id))}>Delete</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setConfirmId(r.id)}>Delete</button>
         </div>
       )
     },
@@ -62,6 +84,14 @@ export default function ComplexesPage() {
         </div>
         <div className="mt-3 flex justify-end">
           <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => setOpen(false)}>Save</button>
+        </div>
+      </Modal>
+
+      <Modal open={confirmId !== null} onClose={() => setConfirmId(null)} title="Confirm Delete">
+        <div>Are you sure you want to delete this complex?</div>
+        <div className="mt-3 flex justify-end gap-2">
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setConfirmId(null)}>Cancel</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setRows(rs => rs.filter(x => x.id !== confirmId)); setConfirmId(null); }}>Delete</button>
         </div>
       </Modal>
     </Shell>
