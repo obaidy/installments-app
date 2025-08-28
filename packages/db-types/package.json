@@ -1,0 +1,16 @@
+{
+  "name": "@installments/db-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "types": "src/database.ts",
+  "exports": {
+    ".": {
+      "types": "./src/database.ts",
+      "import": "./index.mjs",
+      "default": "./index.mjs"
+    }
+  }
+}
+

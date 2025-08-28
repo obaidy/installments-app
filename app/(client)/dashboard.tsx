@@ -71,6 +71,7 @@ export default function Dashboard() {
         i.amount_iqd,
         i.type === 'service_fee' ? `Service Fee ${i.id}` : `Installment ${i.id}`,
         metadata,
+        { type: i.type ?? 'installment', id: i.id }
       );
 
     if (referenceId) {
@@ -79,6 +80,13 @@ export default function Dashboard() {
     },
     [router],
   );
+
+  const handlePromise = useCallback(async (i: Installment) => {
+    // Promise within 7 days by default
+    const promiseDate = new Date();
+    promiseDate.setDate(promiseDate.getDate() + 7);
+    await supabase.from('promises').insert({ user_id: (await supabase.auth.getUser()).data.user?.id, target_type: i.type ?? 'installment', target_id: i.id, promise_date: promiseDate.toISOString().slice(0,10) });
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>
@@ -90,7 +98,7 @@ export default function Dashboard() {
           keyExtractor={(item, index) => String(item.id ?? index)}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (
-            <InstallmentCard item={item} onPay={handlePay} />
+            <InstallmentCard item={item} onPay={handlePay} onPromise={handlePromise} />
           )}
         />
       </View>

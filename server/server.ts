@@ -4,10 +4,12 @@ import cors from 'cors';
 import Stripe from 'stripe';
 
 // We'll construct a Stripe client lazily for webhook verification to avoid requiring env on import.
-import { supabase } from '../lib/supabaseClient';
+import { supabaseService } from '../lib/supabaseServiceClient';
 
 // ⬇️ New: unified payments router (provides /payments/checkout and /payments/status/:ref)
 import paymentsRouter from './routes/payments';
+import authRouter from './routes/auth';
+import reconcileRouter from './routes/reconcile';
 
 export const app = express();
 app.use(cors());
@@ -69,20 +71,30 @@ export const webhookHandler: RequestHandler = async (req, res) => {
     const amount = intent.amount_received ?? intent.amount ?? 0;
     const status = mapStripeStatus(intent.status);
 
+    // Update payment_intents if exists
+    try {
+      await supabaseService
+        .from('payment_intents')
+        .update({ status: intent.status as any, provider: 'stripe' })
+        .eq('provider_ref', intent.id);
+    } catch {}
+
     // Upsert payment row if we have linkage data
     if (unitId && (installmentId || serviceFeeId)) {
-      await supabase.from('payments').upsert({
+      await supabaseService.from('payments').upsert({
         unit_id: unitId,
         installment_id: installmentId,
         service_fee_id: serviceFeeId,
         amount: amount / 100,
         status,
+        provider: 'stripe',
+        provider_ref: intent.id,
         paid_at: status === 'paid' ? new Date().toISOString() : null,
       });
 
       if (status === 'paid') {
         if (installmentId) {
-          await supabase
+          await supabaseService
             .from('installments')
             .update({
               paid: true,
@@ -90,7 +102,7 @@ export const webhookHandler: RequestHandler = async (req, res) => {
             })
             .eq('id', installmentId);
         } else if (serviceFeeId) {
-          await supabase
+          await supabaseService
             .from('service_fees')
             .update({
               paid: true,
@@ -113,6 +125,8 @@ app.use(express.json());
 
 // ⬇️ Mount the new unified router (Stripe now; flip USE_QI=1 later)
 app.use('/payments', paymentsRouter);
+app.use('/auth', authRouter);
+app.use('/reconcile', reconcileRouter);
 
 // Simple health check
 app.get('/healthz', (_req, res) => res.json({ ok: true }));

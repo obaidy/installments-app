@@ -14,9 +14,11 @@ export type Installment = {
 export default function InstallmentCard({
   item,
   onPay,
+  onPromise,
 }: {
   item: Installment;
   onPay?: (i: Installment) => void;
+  onPromise?: (i: Installment) => void;
 }) {
   const due = new Date(item.due_date);
   const today = new Date();
@@ -47,12 +49,22 @@ export default function InstallmentCard({
       </Text>
       <Text style={{ color: '#6B7280' }}>Due: {due.toDateString()}</Text>
       {!isPaid && (
-        <TouchableOpacity
-          onPress={() => onPay?.(item)}
-          style={{ backgroundColor: '#111827', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
-        >
-          <Text style={{ color: 'white', fontWeight: '700' }}>Pay</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => onPay?.(item)}
+            style={{ flex: 1, backgroundColor: '#111827', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
+          >
+            <Text style={{ color: 'white', fontWeight: '700' }}>Pay</Text>
+          </TouchableOpacity>
+          {isOverdue ? (
+            <TouchableOpacity
+              onPress={() => onPromise?.(item)}
+              style={{ flex: 1, backgroundColor: '#374151', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: 'white', fontWeight: '700' }}>Promise</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       )}
     </View>
   );

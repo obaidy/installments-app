@@ -35,6 +35,9 @@ export default function LoginPage() {
     const { data: userRes } = await supabase.auth.getUser();
     const userId = userRes.user?.id;
     if (!userId) { setError('Login failed'); return; }
+    // Require approved status
+    const { data: status } = await supabase.from('user_status').select('status').eq('user_id', userId).single();
+    if (!status || status.status !== 'approved') { setError('User is not approved yet'); return; }
     const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId).single();
     const role = data?.role as string | undefined;
     if (role === 'admin') {

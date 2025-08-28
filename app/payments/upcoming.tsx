@@ -27,10 +27,17 @@ export default function UpcomingInstallmentsScreen() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Fallback to base tables with client_complex_status filter
     const { data, error } = await supabase
-      .from('v_user_dues')
-      .select('id, unit_id, amount_iqd, due_date, paid, type')
-      .eq('user_id', user.id)
+      .from('installments')
+      .select('id, unit_id, amount_iqd, due_date, paid')
+      .in('unit_id', (
+        await supabase
+          .from('units')
+          .select('id, complex_id, client_complex_status!inner(status)')
+          .eq('user_id', user.id)
+          .eq('client_complex_status.status', 'approved')
+      ).data?.map((u: any) => u.id) || [])
       .order('due_date', { ascending: true });
 
    if (!error && data) setDues(data as DueItem[]);

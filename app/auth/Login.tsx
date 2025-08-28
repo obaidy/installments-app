@@ -21,6 +21,25 @@ export default function LoginScreen() {
       return;
     }
     
+    // Check approval status first
+    const {
+      data: { user },
+    } = await (await import('../../lib/supabaseClient')).supabase.auth.getUser();
+    if (!user) {
+      setError('Login failed, try again');
+      return;
+    }
+    const { data: statusRow } = await (await import('../../lib/supabaseClient')).supabase
+      .from('user_status')
+      .select('status')
+      .eq('user_id', user.id)
+      .single();
+    if (!statusRow || statusRow.status !== 'approved') {
+      setError('Your account is pending approval. Please wait for an admin.');
+      await (await import('../../lib/supabaseClient')).signOut();
+      return;
+    }
+
     const role = await getCurrentUserRole();
     if (!role) {
       setError('Unable to determine user role');

@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
+import { getSupabaseKeys } from '@installments/config';
+import type { Database } from '@installments/db-types/src/database';
 
 import type { AuthResponse, AuthError, PostgrestError } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseKeys();
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const signUp = async (
   email: string,
@@ -22,6 +22,11 @@ export const signUp = async (
       .insert({ user_id: data.user.id, role: 'client' });
 
     roleError = insertError;
+    // Initialize pending status and profile
+    try {
+      await supabase.from('user_status').upsert({ user_id: data.user.id, status: 'pending' });
+      await supabase.from('profiles').upsert({ user_id: data.user.id, email });
+    } catch {}
   }
 
   return { data, error, roleError };

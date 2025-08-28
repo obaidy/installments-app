@@ -64,6 +64,8 @@ export default function CheckoutScreen() {
           amountIQD: due.amount_iqd,
           description: type,
           metadata,
+          target_type: type === 'service_fee' ? 'service_fee' : 'installment',
+          target_id: due.id,
         }),
       });
       const result = await response.json();

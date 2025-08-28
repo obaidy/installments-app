@@ -24,10 +24,10 @@ export default function ManagerDashboard() {
         return;
       }
 
-      const { data } = await supabase
-        .from('user_complexes')
-        .select('complexes ( id, name )')
-        .eq('user_id', user.id);
+    const { data } = await supabase
+      .from('manager_complexes')
+      .select('complexes ( id, name )')
+      .eq('manager_id', user.id);
 
       if (data) {
         const complexes = data.flatMap(entry => entry.complexes) as ManagedComplex[];
@@ -112,7 +112,7 @@ export default function ManagerDashboard() {
           <PrimaryButton
             title="Manage Units"
             style={styles.button}
-            onPress={() => router.push(`/(web)/units?complexId=${complex.id}`)}
+            onPress={() => router.push(`/(manager)/units?complexId=${complex.id}`)}
           />
         </View>
       ))}

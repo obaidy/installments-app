@@ -8,11 +8,13 @@ import { t } from '@/lib/i18n'
 
 const nav = [
   { href: '/', key: 'dashboard' as const, icon: '📊' },
+  { href: '/approvals', key: 'approvals' as const, icon: '✅' },
   { href: '/complexes', key: 'complexes' as const, icon: '🏢' },
   { href: '/units', key: 'units' as const, icon: '🏠' },
   { href: '/installments', key: 'installments' as const, icon: '🧾' },
   { href: '/service-fees', key: 'serviceFees' as const, icon: '🛠️' },
   { href: '/payments', key: 'payments' as const, icon: '💸' },
+  { href: '/reconciliation', key: 'reconciliation' as const, icon: '📒' },
   { href: '/users', key: 'users' as const, icon: '👤' },
 ]
 

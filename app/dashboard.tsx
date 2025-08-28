@@ -8,7 +8,7 @@ export default function DashboardAlias() {
   useEffect(() => {
     async function go() {
       const role = await getCurrentUserRole();
-      if (role === 'admin') router.replace('/(web)');
+      if (role === 'admin') router.replace('/admin-web');
       else if (role === 'manager') router.replace('/(manager)');
       else if (role) router.replace('/(tabs)');
       else router.replace('/auth/Login');
@@ -22,4 +22,3 @@ export default function DashboardAlias() {
     </View>
   );
 }
-

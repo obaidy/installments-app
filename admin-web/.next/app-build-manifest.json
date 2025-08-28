@@ -11,15 +11,10 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/(routes)/complexes/page": [
+    "/not-authorized/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(routes)/complexes/page.js"
-    ],
-    "/(routes)/units/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(routes)/units/page.js"
+      "static/chunks/app/not-authorized/page.js"
     ]
   }
 }

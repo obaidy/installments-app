@@ -28,8 +28,9 @@ export default function HomeDashboard() {
 
     const { data: unitRows } = await supabase
       .from('units')
-      .select('id, name')
-      .eq('user_id', user.id);
+      .select('id, name, complex_id, client_complex_status!inner(status)')
+      .eq('user_id', user.id)
+      .eq('client_complex_status.status', 'approved');
     if (!unitRows) return;
 
     const list: UnitWithDue[] = [];

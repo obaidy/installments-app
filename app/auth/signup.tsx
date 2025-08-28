@@ -41,22 +41,24 @@ export default function SignupScreen() {
       setError(signupError?.message ?? roleError?.message ?? 'Unknown error');
       return;
     }
-  
+
     const userId = data.user?.id;
-  
+
     if (userId) {
+      // Ensure status pending + profile
+      await supabase.from('user_status').upsert({ user_id: userId, status: 'pending' });
+      await supabase.from('profiles').upsert({ user_id: userId, email });
+      // Create client-complex pending rows for manager approval
       for (const complexId of ids) {
         const { error: linkError } = await supabase
-          .from('user_complexes')
-          .insert({ user_id: userId, complex_id: complexId });
-        if (linkError) {
-          setError(linkError.message);
-          return;
-        }
+          .from('client_complex_status')
+          .upsert({ user_id: userId, complex_id: complexId, status: 'pending' });
+        if (linkError) { setError(linkError.message); return; }
       }
     }
-  
-    router.replace('/dashboard');
+    // Go back to login with info message
+    setError('Account created. Please wait for approval.');
+    setTimeout(() => router.replace('/auth/Login'), 1200);
   }
   
 

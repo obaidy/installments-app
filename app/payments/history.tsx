@@ -27,8 +27,9 @@ export default function PaymentHistoryScreen() {
 
     const { data: units } = await supabase
       .from('units')
-      .select('id')
-      .eq('user_id', user.id);
+      .select('id, complex_id, client_complex_status!inner(status)')
+      .eq('user_id', user.id)
+      .eq('client_complex_status.status', 'approved');
 
     const unitIds = units?.map((u) => u.id) || [];
     if (unitIds.length === 0) return;

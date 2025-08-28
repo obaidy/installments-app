@@ -2,7 +2,7 @@ Architecture Overview
 
 Mobile (Expo/React Native)
 
-- Routing: `app/` uses Expo Router with segments for client and admin `(web)`.
+- Routing: `app/` uses Expo Router for client and manager segments. Admin routes are in `admin-web/` (Next.js), opened via WebView from the app.
 - State/queries: `@tanstack/react-query` for data fetching and caching.
 - Auth/data: Supabase client in `lib/supabaseClient.ts`.
 - Payments: `lib/api/payments.ts` calls the backend for checkout and status.

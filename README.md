@@ -23,7 +23,7 @@ Set `EXPO_PUBLIC_API_URL` in `.env` so the app can reach the API.
 
 ## Project Structure
 
-- `app/`: Expo Router screens (client + admin under `(web)`)
+- `app/`: Expo Router screens (client + manager). Admin now lives in `admin-web/`.
 - `components/`, `hooks/`, `lib/`: shared UI and utilities
 - `server/`: Express server, payments routes, and gateways
 - `scripts/`: maintenance/cron scripts (e.g., `schedule-charges.ts`)
@@ -68,7 +68,7 @@ Note: SQL files are not included in this repo. Create the schema and RLS policie
 
 ## Admin Pages
 
-Admin UI lives in `app/(web)`. Visit `/(web)` to access users, complexes, and units management. Pages require the admin role and use `useAuthorization` to restrict access.
+Admin UI lives in `admin-web/` (Next.js app). The mobile app routes admins to a WebView (`/admin-web`) which SSO-authenticates into `admin-web`.
 
 ## Scripts
 

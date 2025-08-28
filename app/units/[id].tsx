@@ -20,8 +20,9 @@ export default function UnitDetailsScreen() {
   async function fetchUnit(unitId: string) {
     const { data } = await supabase
       .from('units')
-      .select('*, complex:complexes(name)')
+      .select('*, complex:complexes(name), client_complex_status!inner(status)')
       .eq('id', unitId)
+      .eq('client_complex_status.status', 'approved')
       .single();
     if (data) setUnit(data);
   }

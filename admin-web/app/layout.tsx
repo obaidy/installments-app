@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.variable}>
       <body>
         <ThemeProvider>
-          <RequireRole allowed={[ 'admin' ]}>{children}</RequireRole>
+          <RequireRole allowed={[ 'admin', 'accountant' ]}>{children}</RequireRole>
         </ThemeProvider>
       </body>
     </html>

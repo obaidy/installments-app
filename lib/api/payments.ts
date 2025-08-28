@@ -3,11 +3,16 @@ import * as WebBrowser from 'expo-web-browser';
 import { API_BASE } from '../config';
 
 
-export async function createCheckout(amountIQD: number, description?: string, metadata?: Record<string,string>) {
+export async function createCheckout(
+  amountIQD: number,
+  description?: string,
+  metadata?: Record<string, string>,
+  target?: { type: 'installment' | 'service_fee'; id: number }
+) {
 const returnUrl = Linking.createURL('/(client)/payments/return');
 const r = await fetch(`${API_BASE}/payments/checkout`, {
 method: 'POST', headers: { 'content-type': 'application/json' },
-body: JSON.stringify({ amountIQD, description, metadata, returnUrl })
+body: JSON.stringify({ amountIQD, description, metadata, returnUrl, target_type: target?.type, target_id: target?.id })
 });
 const data = await r.json();
 if (!r.ok) throw new Error(data?.error || 'Payment error');
