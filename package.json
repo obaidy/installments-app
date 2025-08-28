@@ -2,6 +2,10 @@
   "name": "installments-app",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "workspaces": [
+    "admin-web",
+    "packages/*"
+  ],
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -14,6 +18,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@installments/tokens": "file:packages/tokens",
     "@expo/vector-icons": "^14.1.0",
     "@fontsource/inter": "^5.2.6",
     "@fontsource/poppins": "^5.2.6",

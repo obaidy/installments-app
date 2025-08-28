@@ -7,7 +7,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
-import { QueryProvider } from './providers/QueryProvider';
+import { QueryProvider } from './_providers/QueryProvider';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -33,8 +33,8 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(web)" options={{ headerShown: false }} />
-            <Stack.Screen name="(manager)" options={{ headerShown: false }} />
+            {/* Group routes don't need explicit Stack.Screen entries */}
+            <Stack.Screen name="admin-web" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

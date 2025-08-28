@@ -29,13 +29,16 @@ export default function LoginScreen() {
 
     console.log('[Login] role:', role);
     if (role === 'admin') {
-      console.log('[Login] redirecting to /(web)');
-      router.replace('/(web)');
+      console.log('[Login] redirecting to /admin-web (Next admin)');
+      router.replace('/admin-web');
     } else if (role === 'manager') {
       console.log('[Login] redirecting to /(manager)');
       router.replace('/(manager)');
+    } else if (role === 'client') {
+      console.log('[Login] redirecting to /(client)/dashboard');
+      router.replace('/(client)/dashboard');
     } else {
-      console.log('[Login] redirecting to /(tabs)');
+      console.log('[Login] unknown role, redirecting to /(tabs)');
       router.replace('/(tabs)');
     }
   }

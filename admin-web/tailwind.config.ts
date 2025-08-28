@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config: Config = {
   darkMode: [ 'class' ],
@@ -8,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [ 'var(--font-sans)', ...defaultTheme.fontFamily.sans ],
+      },
       colors: {
         // Theme driven by CSS vars; fallback values provided
         background: 'hsl(var(--background))',
@@ -37,4 +41,3 @@ const config: Config = {
 }
 
 export default config
-
