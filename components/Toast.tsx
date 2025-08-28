@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '../constants/Colors';
 import { ThemedText } from './ThemedText';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 interface ToastContextType {
   show: (message: string) => void;

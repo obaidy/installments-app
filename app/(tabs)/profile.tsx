@@ -1,7 +1,8 @@
 import { View, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { signOut } from '../../lib/supabaseClient';
+import { setAppLanguage } from '../../lib/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -14,6 +15,11 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <ThemedText type="title">Profile</ThemedText>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Button title="العربية" onPress={() => setAppLanguage('ar')} />
+        <Button title="English" onPress={() => setAppLanguage('en')} />
+        <Button title="کوردی" onPress={() => setAppLanguage('ku')} />
+      </View>
       <Button
         title="Join Complex"
         onPress={() => router.push('/complexes/add')}

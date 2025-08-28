@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { ThemeProvider } from '@/lib/theme'
+import { ThemeProvider } from '../lib/theme'
 
 export const metadata: Metadata = {
   title: 'Installments Admin',

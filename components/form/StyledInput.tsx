@@ -6,8 +6,8 @@ import {
 } from 'react-native';
 import { useState } from 'react';
 import { DesignTokens } from '../../constants/design';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 export type StyledInputProps = TextInputProps & {
   /**

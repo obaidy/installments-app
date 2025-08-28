@@ -5,7 +5,7 @@ import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { useToast } from '../../components/Toast';
 import { Layout } from '../../constants/Layout';
 import { supabase } from '../../lib/supabaseClient';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 

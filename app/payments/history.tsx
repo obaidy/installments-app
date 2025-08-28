@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 
 type Payment = {
   id: number;

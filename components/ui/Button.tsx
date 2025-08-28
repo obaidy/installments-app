@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleProp, StyleSheet, TextStyle, TouchableOpacity, TouchableOpacityProps, ViewStyle } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from '../ThemedText';
+import { useColorScheme } from '../../hooks/useColorScheme';
 import { palette, spacing } from '../../constants/design';
 
 export type ButtonProps = TouchableOpacityProps & {

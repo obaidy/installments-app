@@ -13,8 +13,9 @@
   --muted-foreground: 215 12% 45%;
   --border: 210 16% 86%;
   --input: 210 16% 86%;
-  --ring: 245 92% 65%;
-  --primary: 245 92% 65%; /* #6257F7 */
+  /* Exact primary requested: #635BFF (≈ hsl(244, 100%, 66%)) */
+  --ring: 244 100% 66%;
+  --primary: 244 100% 66%;
   --primary-foreground: 0 0% 100%;
   --accent: 265 92% 66%; /* violet-ish for gradient end */
 }
@@ -46,4 +47,3 @@ body {
 .kpi-gradient {
   background-image: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
 }
-

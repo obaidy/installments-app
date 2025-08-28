@@ -7,7 +7,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "schedule-charges": "ts-node scripts/schedule-charges.ts",
-    "start-server": "ts-node server/server.ts",
+    "start-server": "node --loader ts-node/esm --experimental-specifier-resolution=node server/index.ts",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -61,6 +61,7 @@
     "stripe": "^12.18.0"
   },
   "devDependencies": {
+    "babel-plugin-module-resolver": "^5.0.0",
     "@babel/core": "^7.25.2",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.2.0",

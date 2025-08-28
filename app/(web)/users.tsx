@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
 import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
 import { AdminActionButton } from '../../components/admin/AdminActionButton';
 import { AdminListItem } from '../../components/admin/AdminListItem';
+import { AdminToolbar } from '../../components/admin/AdminToolbar';
+import { AdminEmpty } from '../../components/admin/AdminEmpty';
+import { AdminLoading } from '../../components/admin/AdminLoading';
+import { AdminStatusChip } from '../../components/admin/AdminStatusChip';
 import { AdminModal } from '../../components/admin/AdminModal';
 
 type UserRole = { user_id: string; role: string };
@@ -55,7 +59,7 @@ export default function UsersAdminScreen() {
   if (!authorized && !loading) {
     return (
       <AdminLayout title="Users">
-        <ThemedText>Access denied</ThemedText>
+        <AdminEmpty title="Access denied" />
       </AdminLayout>
     );
   }
@@ -63,7 +67,7 @@ export default function UsersAdminScreen() {
   if (loading) {
     return (
       <AdminLayout title="Users">
-        <ThemedText>Loading...</ThemedText>
+        <AdminLoading />
       </AdminLayout>
     );
   }
@@ -81,24 +85,13 @@ export default function UsersAdminScreen() {
           </View>
         </AdminListItem>
       )}
-      <View style={styles.toolbar}>
-        <StyledInput
-          placeholder="Search by role…"
-          value={query}
-          onChangeText={setQuery}
-          style={{ flex: 1 }}
-          variant="filled"
-        />
-        <AdminActionButton title="Search" onPress={() => { setPage(0); fetchUsers(); }} />
-        <AdminActionButton
-          title="Prev"
-          onPress={() => { if (page > 0) { setPage(p => p - 1); fetchUsers(); } }}
-        />
-        <AdminActionButton
-          title="Next"
-          onPress={() => { setPage(p => p + 1); fetchUsers(); }}
-        />
-      </View>
+      <AdminToolbar
+        query={query}
+        setQuery={setQuery}
+        onSearch={() => { setPage(0); fetchUsers(); }}
+        onPrev={() => { if (page > 0) { setPage(p => p - 1); fetchUsers(); } }}
+        onNext={() => { setPage(p => p + 1); fetchUsers(); }}
+      />
       <FlatList
         data={users}
         keyExtractor={(item) => item.user_id}
@@ -115,6 +108,7 @@ export default function UsersAdminScreen() {
               }
             />
             <View style={styles.actions}>
+              <AdminStatusChip label={item.role.toUpperCase()} variant={item.role === 'admin' ? 'info' : 'default'} />
               <AdminActionButton
                 title="Update"
                 onPress={() => updateRole(item.user_id)}

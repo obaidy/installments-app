@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
+import { Colors } from '../../../../constants/Colors';
+import { useColorScheme } from '../../../../hooks/useColorScheme';
 import { useLocalSearchParams } from 'expo-router';
 import { getPaymentStatus } from '../../../../lib/api/payments';
 
@@ -22,15 +24,31 @@ return () => { isMounted = false; if (t) clearTimeout(t); };
 }, [ref]);
 
 
+const theme = useColorScheme() ?? 'light';
+const color = Colors[theme].primary;
 return (
-<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-{status === 'pending' && (<>
-<ActivityIndicator />
-<Text style={{ marginTop: 12 }}>Processing payment…</Text>
-</>)}
-{status === 'paid' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#166534' }}>Payment succeeded ✅</Text>}
-{status === 'failed' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#991B1B' }}>Payment failed ❌</Text>}
-{status === 'cancelled' && <Text style={{ fontSize: 18, fontWeight: '700', color: '#374151' }}>Payment cancelled</Text>}
-</View>
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    {status === 'pending' && (
+      <>
+        <ActivityIndicator color={color} />
+        <Text style={{ marginTop: 12, color }}>Processing payment…</Text>
+      </>
+    )}
+    {status === 'paid' && (
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#166534' }}>
+        Payment succeeded ✅
+      </Text>
+    )}
+    {status === 'failed' && (
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#991B1B' }}>
+        Payment failed ❌
+      </Text>
+    )}
+    {status === 'cancelled' && (
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#374151' }}>
+        Payment cancelled
+      </Text>
+    )}
+  </View>
 );
 }

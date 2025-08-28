@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next';
 import { I18nManager } from 'react-native';
 import { getLocales } from 'expo-localization';
 
-export type AppLanguage = 'en' | 'ar';
+export type AppLanguage = 'en' | 'ar' | 'ku';
 
 const resources = {
   en: {
@@ -49,15 +49,39 @@ const resources = {
       pastDueShort: 'متأخر',
     },
   },
+  ku: {
+    translation: {
+      dashboard: 'داشبۆرد',
+      totalDueToday: 'کۆی ئەمڕۆ',
+      next30: '٣٠ ڕۆژی داهاتوو',
+      pastDue: 'قەرزدار',
+      receipts: 'وەسڵەکان',
+      pay: 'پارەدان',
+      due: 'کاتی پارەدان',
+      overdue: 'قەرزدار',
+      paid: 'پارەدراو',
+      upcomingAndDue: 'ئەمەد و کاتی پارەدان',
+      processingPayment: 'چاوەڕوانە لە جێبەجێبوونی پارەدان…',
+      paymentSucceeded: 'پارەدان سەرکەوتوو بوو',
+      paymentFailed: 'پارەدان شکستی هێنا',
+      paymentCanceled: 'پارەدان هەڵوەشاوە',
+      today: 'ئەمڕۆ',
+      next30d: '٣٠ ڕۆژ',
+      pastDueShort: 'قەرزدار',
+    },
+  },
 } as const;
 
 function deviceLang(): AppLanguage {
   const code = getLocales()[0]?.languageCode?.toLowerCase();
-  return code === 'ar' ? 'ar' : 'en';
+  if (code === 'ar') return 'ar';
+  if (code === 'ku') return 'ku';
+  // Fallback to Arabic when not supported
+  return 'ar';
 }
 
 function applyRTL(lang: AppLanguage) {
-  const shouldBeRTL = lang === 'ar';
+  const shouldBeRTL = lang === 'ar' || lang === 'ku';
   // Always allow RTL; force when Arabic chosen (may require app reload to fully take effect)
   I18nManager.allowRTL(true);
   if (I18nManager.isRTL !== shouldBeRTL) {

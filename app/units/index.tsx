@@ -3,7 +3,7 @@ import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 
 type Unit = { id: number; name: string; complex_id: number };
 

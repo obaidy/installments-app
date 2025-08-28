@@ -1,7 +1,7 @@
 import { View, StyleSheet } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
+import { ThemedText } from '../ThemedText';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { Colors } from '../../constants/Colors';
 
 export function MetricCard({ label, value }: { label: string; value: string | number }) {
   const theme = useColorScheme() ?? 'light';

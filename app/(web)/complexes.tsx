@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View, Alert } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
 import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
 import { AdminActionButton } from '../../components/admin/AdminActionButton';
 import { AdminListItem } from '../../components/admin/AdminListItem';
+import { AdminToolbar } from '../../components/admin/AdminToolbar';
+import { AdminEmpty } from '../../components/admin/AdminEmpty';
+import { AdminLoading } from '../../components/admin/AdminLoading';
 import { AdminModal } from '../../components/admin/AdminModal';
 
 
@@ -94,7 +97,7 @@ export default function ComplexesScreen() {
   if (!authorized && !loading) {
     return (
       <AdminLayout title="Complexes">
-        <ThemedText>Access denied</ThemedText>
+        <AdminEmpty title="Access denied" />
       </AdminLayout>
     );
   }
@@ -102,7 +105,7 @@ export default function ComplexesScreen() {
   if (loading) {
     return (
       <AdminLayout title="Complexes">
-        <ThemedText>Loading...</ThemedText>
+        <AdminLoading />
       </AdminLayout>
     );
   }
@@ -110,19 +113,14 @@ export default function ComplexesScreen() {
 
   return (
     <AdminLayout title="Complexes">
-      <View style={styles.toolbar}>
-        <StyledInput
-          placeholder="Search by name…"
-          value={query}
-          onChangeText={setQuery}
-          style={{ flex: 1 }}
-          variant="filled"
-        />
-        <AdminActionButton title="Search" onPress={() => { setPage(0); fetchComplexes(); }} />
-        <AdminActionButton title="Prev" onPress={() => { if (page > 0) { setPage(p => p - 1); fetchComplexes(); } }} />
-        <AdminActionButton title="Next" onPress={() => { setPage(p => p + 1); fetchComplexes(); }} />
-      </View>
-      <AdminActionButton title="Add Complex" onPress={() => setModalVisible(true)} />
+      <AdminToolbar
+        query={query}
+        setQuery={setQuery}
+        onSearch={() => { setPage(0); fetchComplexes(); }}
+        onPrev={() => { if (page > 0) { setPage(p => p - 1); fetchComplexes(); } }}
+        onNext={() => { setPage(p => p + 1); fetchComplexes(); }}
+        right={<AdminActionButton title="Add Complex" onPress={() => setModalVisible(true)} />}
+      />
       <FlatList
         data={complexes}
         keyExtractor={(item) => item.id.toString()}
@@ -189,4 +187,5 @@ const styles = StyleSheet.create({
   input: { paddingHorizontal: 8, borderRadius: 8, flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   separator: { height: 12 },
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
 });

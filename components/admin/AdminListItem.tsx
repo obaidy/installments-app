@@ -1,8 +1,8 @@
 import { PropsWithChildren } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StyleSheet as RNWStyleSheet } from 'react-native';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { Colors } from '../../constants/Colors';
 
 export function AdminListItem({ children, style }: PropsWithChildren<{ style?: any }>) {
   const { width } = useWindowDimensions();

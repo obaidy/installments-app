@@ -1,6 +1,6 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 
 export default function PaymentsHomeScreen() {
   const router = useRouter();

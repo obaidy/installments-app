@@ -4,7 +4,7 @@ import { useToast } from '../../components/Toast';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { insertComplexesFromInput } from '../../lib/complexes';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { Layout } from '../../constants/Layout';
 
 export default function AddComplexScreen() {

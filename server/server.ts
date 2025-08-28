@@ -3,8 +3,7 @@ import express, { RequestHandler } from 'express';
 import cors from 'cors';
 import Stripe from 'stripe';
 
-// Keep your existing Stripe client import for webhook verification
-import { stripe } from '../lib/stripeClient';
+// We'll construct a Stripe client lazily for webhook verification to avoid requiring env on import.
 import { supabase } from '../lib/supabaseClient';
 
 // ⬇️ New: unified payments router (provides /payments/checkout and /payments/status/:ref)
@@ -44,7 +43,11 @@ export const webhookHandler: RequestHandler = async (req, res) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    // Verify webhook without needing a client instance
+    
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', { apiVersion: '2022-11-15' as any });
+    event = stripe.webhooks.constructEvent(req.body as any, sig, secret);
+
   } catch (err: any) {
     res.status(400).json({ error: `Webhook Error: ${err.message}` });
     return;
@@ -114,7 +117,7 @@ app.use('/payments', paymentsRouter);
 // Simple health check
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-if (require.main === module) {
+export function startServer() {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`API server listening on port ${PORT}`);

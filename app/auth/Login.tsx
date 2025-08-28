@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { StyledInput } from '../../components/form/StyledInput';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
-import { ThemedView } from '@/components/ThemedView';
+import { ThemedView } from '../../components/ThemedView';
 import { signIn, getCurrentUserRole } from '../../lib/supabaseClient';
 import { DesignTokens } from '../../constants/design';
 
@@ -27,11 +27,15 @@ export default function LoginScreen() {
       return;
     }
 
+    console.log('[Login] role:', role);
     if (role === 'admin') {
+      console.log('[Login] redirecting to /(web)');
       router.replace('/(web)');
     } else if (role === 'manager') {
+      console.log('[Login] redirecting to /(manager)');
       router.replace('/(manager)');
     } else {
+      console.log('[Login] redirecting to /(tabs)');
       router.replace('/(tabs)');
     }
   }

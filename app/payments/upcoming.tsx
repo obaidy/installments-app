@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { useRouter } from 'expo-router';
 
 type DueItem = {

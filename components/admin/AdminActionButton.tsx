@@ -1,7 +1,7 @@
 import { StyleProp, ViewStyle } from 'react-native';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
-import { PrimaryButton, PrimaryButtonProps } from '@/components/form/PrimaryButton';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { Colors } from '../../constants/Colors';
+import { PrimaryButton, PrimaryButtonProps } from '../form/PrimaryButton';
 
 export type AdminActionButtonProps = PrimaryButtonProps & {
   variant?: 'default' | 'danger';

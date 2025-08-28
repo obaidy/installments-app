@@ -7,3 +7,8 @@ export function formatIQD(amount: number, locale: string = 'en-IQ') {
 
 export type Status = 'paid' | 'due' | 'overdue';
 
+
+export function formatDate(d: string | Date, locale: string = 'ar-IQ') {
+  const dt = typeof d === 'string' ? new Date(d) : d;
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }).format(dt);
+}

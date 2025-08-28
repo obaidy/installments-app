@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import { StyleSheet } from 'react-native';
 
 import { palette } from '../../constants/design';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 
 export default function BlurTabBarBackground() {

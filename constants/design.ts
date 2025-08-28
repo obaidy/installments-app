@@ -1,6 +1,5 @@
 export const palette = {
   light: {
-    // Stripe-inspired light palette
     background: '#F6F9FC',
     surface: '#FFFFFF',
     text: '#0A2540',
@@ -10,7 +9,6 @@ export const palette = {
     icon: '#6B7280',
   },
   dark: {
-    // Stripe-inspired dark palette
     background: '#0A2540',
     surface: '#111827',
     text: '#F8FAFC',
@@ -27,11 +25,11 @@ DesignTokens = {
     inputHorizontal: 8,
   },
   sizes: {
-    inputHeight: 40,
+    inputHeight: 44,
     logo: 80,
   },
   radius: {
-    sm: 8,
+    sm: 12,
   },
   border: {
     width: 1,

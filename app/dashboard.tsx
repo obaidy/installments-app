@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
-import { getCurrentUserRole } from '@/lib/supabaseClient';
+import { ThemedText } from '../components/ThemedText';
+import { getCurrentUserRole } from '../lib/supabaseClient';
 
 export default function DashboardAlias() {
   useEffect(() => {

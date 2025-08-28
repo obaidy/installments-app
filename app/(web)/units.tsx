@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -8,6 +8,9 @@ import AdminLayout from './AdminLayout';
 import { StyledInput } from '../../components/form/StyledInput';
 import { AdminActionButton } from '../../components/admin/AdminActionButton';
 import { AdminListItem } from '../../components/admin/AdminListItem';
+import { AdminToolbar } from '../../components/admin/AdminToolbar';
+import { AdminEmpty } from '../../components/admin/AdminEmpty';
+import { AdminLoading } from '../../components/admin/AdminLoading';
 
 type Unit = { id: number; name: string; complex_id: number };
 
@@ -63,7 +66,7 @@ export default function UnitsAdminScreen() {
   if (!authorized && !loading) {
     return (
       <AdminLayout title="Units">
-        <ThemedText>Access denied</ThemedText>
+        <AdminEmpty title="Access denied" />
       </AdminLayout>
     );
   }
@@ -76,7 +79,7 @@ export default function UnitsAdminScreen() {
   if (loading) {
     return (
       <AdminLayout title="Units">
-        <ThemedText>Loading...</ThemedText>
+        <AdminLoading />
       </AdminLayout>
     );
   }
@@ -84,7 +87,7 @@ export default function UnitsAdminScreen() {
   if (parsedId === null) {
     return (
       <AdminLayout title="Units">
-        <ThemedText>Select a complex to manage its units:</ThemedText>
+        <AdminEmpty title="No complex selected" subtitle="Choose a complex to manage its units." />
         <FlatList
           data={complexes}
           keyExtractor={(c) => String(c.id)}
@@ -106,18 +109,13 @@ export default function UnitsAdminScreen() {
 
   return (
     <AdminLayout title="Units">
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <StyledInput
-          placeholder="Search by name…"
-          value={query}
-          onChangeText={setQuery}
-          style={{ flex: 1 }}
-          variant="filled"
-        />
-        <AdminActionButton title="Search" onPress={() => { setPage(0); if (parsedId !== null) fetchUnits(parsedId); }} />
-        <AdminActionButton title="Prev" onPress={() => { if (page > 0 && parsedId !== null) { setPage(p => p - 1); fetchUnits(parsedId); } }} />
-        <AdminActionButton title="Next" onPress={() => { if (parsedId !== null) { setPage(p => p + 1); fetchUnits(parsedId); } }} />
-      </View>
+      <AdminToolbar
+        query={query}
+        setQuery={setQuery}
+        onSearch={() => { setPage(0); if (parsedId !== null) fetchUnits(parsedId); }}
+        onPrev={() => { if (page > 0 && parsedId !== null) { setPage(p => p - 1); fetchUnits(parsedId); } }}
+        onNext={() => { if (parsedId !== null) { setPage(p => p + 1); fetchUnits(parsedId); } }}
+      />
       <FlatList
         data={units}
         keyExtractor={(item) => String(item.id)}

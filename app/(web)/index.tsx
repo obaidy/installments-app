@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { router } from 'expo-router';
 import AdminLayout from './AdminLayout';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { getCurrentUserRole } from '../../lib/supabaseClient';
-import { MetricCard } from '@/components/admin/MetricCard';
-import { supabase } from '@/lib/supabaseClient';
+import { MetricCard } from '../../components/admin/MetricCard';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function AdminDashboard() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);

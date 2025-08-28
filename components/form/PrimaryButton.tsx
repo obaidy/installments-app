@@ -6,8 +6,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import type { ReactNode } from 'react';
-import { ThemedText } from '@/components/ThemedText';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from '../ThemedText';
+import { useColorScheme } from '../../hooks/useColorScheme';
 import { palette, DesignTokens } from '../../constants/design';
 
 export type PrimaryButtonProps = TouchableOpacityProps & {
@@ -18,12 +18,7 @@ export type PrimaryButtonProps = TouchableOpacityProps & {
   style?: StyleProp<ViewStyle>;
 };
 
-export function PrimaryButton({
-  title,
-  gradientColors,
-  style,
-  ...rest
-}: PrimaryButtonProps) {
+export function PrimaryButton({ title, style, ...rest }: PrimaryButtonProps) {
   const theme = useColorScheme() ?? 'light';
   const { primary } = palette[theme];
 

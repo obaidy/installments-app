@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '../hooks/useColorScheme';
 import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
 import { QueryProvider } from './providers/QueryProvider';
@@ -30,7 +30,8 @@ export default function RootLayout() {
       <ToastProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack initialRouteName="index">
-           <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="(web)" options={{ headerShown: false }} />
             <Stack.Screen name="(manager)" options={{ headerShown: false }} />

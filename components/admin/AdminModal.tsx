@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../ThemedText';
 
 export type AdminModalProps = {
   visible: boolean;

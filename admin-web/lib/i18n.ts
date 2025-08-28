@@ -31,11 +31,26 @@ export const dict = {
     filterDue: 'مستحق',
     filterPastDue: 'متأخر',
   },
+  ku: {
+    dashboard: 'داشبۆرد',
+    complexes: 'کۆمپلەکسەکان',
+    units: 'یەکەکان',
+    installments: 'قسطەکان',
+    serviceFees: 'خەرجی خزمەت',
+    payments: 'پارەدان',
+    users: 'بەکارهێنەران',
+    todayDue: 'کۆی ئەمڕۆ',
+    next30: '٣٠ ڕۆژی داهاتوو',
+    pastDue: 'قەرزدار',
+    collectedMtd: 'کۆکراوەی ئەم مانگە',
+    filterAll: 'هەموو',
+    filterDue: 'کاتی پارەدان',
+    filterPastDue: 'قەرزدار',
+  },
 };
 
-export type Locale = keyof typeof dict;
+export type Locale = keyof typeof dict; // 'en' | 'ar' | 'ku'
 
 export function t(locale: Locale, key: keyof typeof dict['en']) {
   return dict[locale][key] || key;
 }
-

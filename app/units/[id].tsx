@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { ThemedText } from '../../components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 
@@ -36,13 +36,17 @@ export default function UnitDetailsScreen() {
   }
 
   function renderItem({ item }: { item: any }) {
+    const paid = !!item.paid;
     return (
-      <View style={styles.item}>
-        <ThemedText>
-          Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
-        </ThemedText>
-        <ThemedText>Amount: {item.amount_iqd}</ThemedText>
-        <ThemedText>Paid: {item.paid ? 'Yes' : 'No'}</ThemedText>
+      <View style={styles.timelineItem}>
+        <View style={styles.timelineDot} />
+        <View style={styles.timelineCard}>
+          <ThemedText style={{ fontWeight: '600' }}>
+            {item.type === 'service_fee' ? 'Service Fee' : 'Installment'} #{item.id}
+          </ThemedText>
+          <ThemedText>{new Date(item.due_date).toLocaleDateString()}</ThemedText>
+          <ThemedText>{item.amount_iqd} IQD • {paid ? 'PAID' : 'DUE'}</ThemedText>
+        </View>
       </View>
     );
   }
@@ -76,6 +80,8 @@ export default function UnitDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4 },
-  separator: { height: 10 },
+  timelineItem: { position: 'relative', paddingLeft: 16 },
+  timelineDot: { position: 'absolute', left: 2, top: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#635BFF' },
+  timelineCard: { padding: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  separator: { height: 12 },
 });

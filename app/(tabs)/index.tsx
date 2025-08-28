@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { PrimaryButton } from '@/components/form/PrimaryButton';
-import { ThemedText } from '@/components/ThemedText';
+import { PrimaryButton } from '../../components/form/PrimaryButton';
+import { ThemedText } from '../../components/ThemedText';
 import { supabase } from '../../lib/supabaseClient';
-import { MetricCard } from '@/components/admin/MetricCard';
+import { MetricCard } from '../../components/admin/MetricCard';
 
 interface UnitWithDue {
   id: number;

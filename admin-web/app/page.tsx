@@ -1,8 +1,9 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { KpiCard } from '@/components/KpiCard'
-import { MoneyTable } from '@/components/MoneyTable'
-import { useTheme } from '@/lib/theme'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { KpiCard } from '../components/KpiCard'
+import { Sparkline } from '../components/Sparkline'
+import { MoneyTable } from '../components/MoneyTable'
+import { Shell } from '../components/Shell'
 
 const mockRows = [
   { id: '1', unit: 'Apt 101', dueDate: '2025-09-01', amount: 250000, status: 'due' as const },
@@ -11,23 +12,19 @@ const mockRows = [
 ]
 
 export default function Page() {
-  const { dark, toggleDark, rtl, toggleRtl } = useTheme()
   return (
-    <main className="p-6 space-y-6">
+    <Shell>
+      <main className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={toggleDark}>{dark ? 'Light' : 'Dark'}</Button>
-          <Button variant="ghost" onClick={toggleRtl}>{rtl ? 'LTR' : 'RTL'}</Button>
-        </div>
       </div>
       <Card className="kpi-gradient text-white">
         <CardContent className="py-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <KpiCard title="Due Today" value={350000} />
-            <KpiCard title="Next 30 Days" value={1250000} />
-            <KpiCard title="Past Due" value={600000} />
-            <KpiCard title="Collected MTD" value={4200000} />
+            <KpiCard title="Due Today" value={350000} delta={8} spark={<Sparkline values={[4,6,3,8,7,10,9]} />} />
+            <KpiCard title="Next 30 Days" value={1250000} delta={12} spark={<Sparkline values={[10,9,11,12,10,8,9]} />} />
+            <KpiCard title="Past Due" value={600000} delta={-5} spark={<Sparkline values={[7,6,7,9,8,7,6]} />} />
+            <KpiCard title="Collected MTD" value={4200000} delta={4} spark={<Sparkline values={[5,7,9,12,14,13,15]} />} />
           </div>
         </CardContent>
       </Card>
@@ -37,7 +34,26 @@ export default function Page() {
         <Button variant="ghost">Past Due</Button>
       </div>
       <MoneyTable rows={mockRows} />
+      <Card>
+        <CardContent className="py-4">
+          <div className="text-sm text-muted-foreground mb-2">Recent Activity</div>
+          <ul className="space-y-2">
+            <li className="flex items-center justify-between">
+              <span>Payment from Apt 101</span>
+              <span className="text-xs opacity-70">Today</span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Reminder sent to Apt 202</span>
+              <span className="text-xs opacity-70">1h ago</span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>New complex added: Rose Gardens</span>
+              <span className="text-xs opacity-70">Yesterday</span>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
     </main>
+    </Shell>
   )
 }
-
