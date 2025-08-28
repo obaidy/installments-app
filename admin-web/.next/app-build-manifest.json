@@ -11,10 +11,20 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/not-authorized/page": [
+    "/approvals/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/not-authorized/page.js"
+      "static/chunks/app/approvals/page.js"
+    ],
+    "/(routes)/complexes/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(routes)/complexes/page.js"
+    ],
+    "/(routes)/users/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(routes)/users/page.js"
     ]
   }
 }
