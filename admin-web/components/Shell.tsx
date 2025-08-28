@@ -5,6 +5,7 @@ import { useTheme } from '@/lib/theme'
 import { cn } from '@/components/ui/utils'
 import { usePathname } from 'next/navigation'
 import { t } from '@/lib/i18n'
+import { supabase } from '@/lib/supabaseClient'
 
 const nav = [
   { href: '/', key: 'dashboard' as const, icon: '📊' },
@@ -62,7 +63,22 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </button>
             <div className="text-lg font-semibold">Installments Admin</div>
           </div>
-          <div className="text-sm opacity-80">{locale.toUpperCase()}</div>
+          <div className="flex items-center gap-3 text-sm opacity-80">
+            <span>{locale.toUpperCase()}</span>
+            <button
+              className="px-3 py-1.5 rounded-md border border-border opacity-80 hover:opacity-100"
+              onClick={async () => {
+                try {
+                  await supabase.auth.signOut();
+                } finally {
+                  try { document.cookie = 'sb-access-token=; Max-Age=0; Path=/'; document.cookie = 'sb-refresh-token=; Max-Age=0; Path=/'; } catch {}
+                  window.location.href = '/auth/login';
+                }
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </header>
         <div className="max-w-7xl mx-auto p-4 md:p-6">{children}</div>
       </section>
@@ -101,6 +117,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 <button className={cn('text-xs px-2 py-1 rounded', locale==='en'?'bg-white/20':'hover:bg-white/10')} onClick={() => setLocale('en')}>English</button>
                 <button className={cn('text-xs px-2 py-1 rounded', locale==='ku'?'bg-white/20':'hover:bg-white/10')} onClick={() => setLocale('ku')}>کوردی</button>
               </div>
+              <button
+                className="mt-2 text-left text-sm opacity-80 hover:opacity-100"
+                onClick={async () => {
+                  try { await supabase.auth.signOut(); } finally {
+                    try { document.cookie = 'sb-access-token=; Max-Age=0; Path=/'; document.cookie = 'sb-refresh-token=; Max-Age=0; Path=/'; } catch {}
+                    window.location.href = '/auth/login';
+                  }
+                }}
+              >Sign out</button>
             </div>
           </div>
         </div>

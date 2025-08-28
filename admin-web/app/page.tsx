@@ -8,6 +8,7 @@ import { MoneyTable } from '../components/MoneyTable'
 import { Shell } from '../components/Shell'
 import { supabase } from '../lib/supabaseClient';
 import type { Status } from '@/lib/format';
+import { StatsCard } from '../components/StatsCard'
 
 type Row = { id: string; unit: string; dueDate: string; amount: number; status: Status };
 
@@ -17,6 +18,11 @@ export default function Page() {
   const [kpis, setKpis] = useState({ dueToday: 0, next30: 0, pastDue: 0, collectedMtd: 0 });
   const [recent, setRecent] = useState<{ title: string; when: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userCount, setUserCount] = useState(0);
+  const [complexCount, setComplexCount] = useState(0);
+  const [unitCount, setUnitCount] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [recentUsers, setRecentUsers] = useState<{ email: string; role: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -64,6 +70,27 @@ export default function Page() {
         when: p.paid_at ? new Date(p.paid_at).toLocaleString() : '',
       }));
       setRecent(rec);
+
+      // Counts
+      const [uRoles, cCount, uCount, pendUsers, pendClients] = await Promise.all([
+        supabase.from('user_roles').select('user_id', { count: 'exact', head: true }),
+        supabase.from('complexes').select('*', { count: 'exact', head: true }),
+        supabase.from('units').select('*', { count: 'exact', head: true }),
+        supabase.from('user_status').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('client_complex_status').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+      setUserCount(uRoles.count || 0);
+      setComplexCount(cCount.count || 0);
+      setUnitCount(uCount.count || 0);
+      setPendingApprovals((pendUsers.count || 0) + (pendClients.count || 0));
+
+      // Recent users (last 5 by role change order)
+      const { data: users } = await supabase
+        .from('user_roles')
+        .select('role, profiles(email)')
+        .order('role')
+        .limit(5);
+      setRecentUsers(((users as any[]) || []).map((r) => ({ email: r.profiles?.email || '—', role: r.role })));
       setLoading(false);
     })();
   }, []);
@@ -89,6 +116,12 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatsCard title="Users" value={userCount} />
+          <StatsCard title="Complexes" value={complexCount} />
+          <StatsCard title="Units" value={unitCount} />
+          <StatsCard title="Pending Approvals" value={pendingApprovals} />
+        </div>
         <div className="flex items-center gap-2">
           <Button variant={filter==='all'?undefined:'ghost'} onClick={()=>setFilter('all')}>All</Button>
           <Button variant={filter==='due'?undefined:'ghost'} onClick={()=>setFilter('due')}>Due</Button>
@@ -107,6 +140,20 @@ export default function Page() {
                 </li>
               ))}
               {recent.length === 0 ? <li className="text-sm opacity-70">No recent payments</li> : null}
+            </ul>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-4">
+            <div className="text-sm text-muted-foreground mb-2">Recent Users</div>
+            <ul className="space-y-2">
+              {recentUsers.map((u, i) => (
+                <li key={i} className="flex items-center justify-between">
+                  <span>{u.email}</span>
+                  <span className="text-xs opacity-70">{u.role.toUpperCase()}</span>
+                </li>
+              ))}
+              {recentUsers.length === 0 ? <li className="text-sm opacity-70">No users</li> : null}
             </ul>
           </CardContent>
         </Card>
