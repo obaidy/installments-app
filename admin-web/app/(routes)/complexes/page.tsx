@@ -5,6 +5,7 @@ import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { Modal } from '@/components/ui/modal';
 import { supabase } from '@/lib/supabaseClient';
+import { ExportButton } from '@/components/ExportButton';
 
 type Complex = { id: number; name: string; code?: string | null; units?: number };
 
@@ -21,6 +22,7 @@ export default function ComplexesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [tempName, setTempName] = useState('');
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchAll(page); }, [page]);
 
@@ -44,6 +46,7 @@ export default function ComplexesPage() {
     if (!q) return rows;
     return rows.filter(r => r.name.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q));
   }, [rows, query]);
+  const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<Complex>[] = [
     { key: 'name', label: 'Name', render: (r) => (
@@ -101,6 +104,14 @@ export default function ComplexesPage() {
     setConfirmId(null);
   }
 
+  async function bulkRemove() {
+    const ids = selectedRows.map(r => r.id);
+    if (!ids.length) return;
+    await supabase.from('complexes').delete().in('id', ids);
+    setRows(rs => rs.filter(r => !ids.includes(r.id)));
+    setSelected({});
+  }
+
   return (
     <Shell>
       <h1 className="text-2xl font-semibold mb-2">Complexes</h1>
@@ -108,9 +119,26 @@ export default function ComplexesPage() {
         query={query}
         setQuery={setQuery}
         onSearch={() => {/* client filter */}}
-        right={<button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setName(''); setCode(''); setOpen(true); setEditingId(null); }}>Add Complex</button>}
+        right={<div className="flex items-center gap-2"><ExportButton filename="complexes.csv" columns={[
+          { key: 'name', label: 'Name' },
+          { key: 'code', label: 'Code' },
+          { key: 'units', label: 'Units' },
+        ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Delete Selected ({selectedRows.length})</button>
+        <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setName(''); setCode(''); setOpen(true); setEditingId(null); }}>Add Complex</button></div>}
       />
-      <DataTable columns={columns} rows={filtered} />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        selectable
+        selected={selected}
+        onToggleRow={(r) => setSelected(s => ({ ...s, [String(r.id)]: !s[String(r.id)] }))}
+        onToggleAll={(checked) => {
+          const next: Record<string, boolean> = {};
+          if (checked) filtered.forEach(r => next[String(r.id)] = true);
+          setSelected(next);
+        }}
+      />
       {loading ? <div className="mt-2 text-sm opacity-70">Loading…</div> : null}
       <div className="flex items-center justify-end gap-2 mt-3">
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>

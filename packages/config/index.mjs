@@ -14,9 +14,3 @@ export function getSupabaseKeys() {
   }
   return { url, anonKey };
 }
-
-export function getPublicAdminBaseUrl() {
-  const url = process.env.EXPO_PUBLIC_ADMIN_WEB_URL || process.env.NEXT_PUBLIC_ADMIN_WEB_URL || '';
-  return url;
-}
-

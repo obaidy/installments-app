@@ -6,6 +6,7 @@ import { cn } from '@/components/ui/utils'
 import { usePathname } from 'next/navigation'
 import { t } from '@/lib/i18n'
 import { supabase } from '@/lib/supabaseClient'
+import { DashboardIcon, ApprovalsIcon, ComplexesIcon, UnitsIcon, InstallmentsIcon, ServiceFeesIcon, PaymentsIcon, ReconciliationIcon, UsersIcon } from '@/components/icons'
 
 const nav = [
   { href: '/', key: 'dashboard' as const, icon: '📊' },
@@ -19,6 +20,19 @@ const nav = [
   { href: '/users', key: 'users' as const, icon: '👤' },
 ]
 
+// Icon-based nav variant used for rendering
+const NAV = [
+  { href: '/', key: 'dashboard' as const, icon: DashboardIcon },
+  { href: '/approvals', key: 'approvals' as const, icon: ApprovalsIcon },
+  { href: '/complexes', key: 'complexes' as const, icon: ComplexesIcon },
+  { href: '/units', key: 'units' as const, icon: UnitsIcon },
+  { href: '/installments', key: 'installments' as const, icon: InstallmentsIcon },
+  { href: '/service-fees', key: 'serviceFees' as const, icon: ServiceFeesIcon },
+  { href: '/payments', key: 'payments' as const, icon: PaymentsIcon },
+  { href: '/reconciliation', key: 'reconciliation' as const, icon: ReconciliationIcon },
+  { href: '/users', key: 'users' as const, icon: UsersIcon },
+]
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const { dark, toggleDark, rtl, toggleRtl, locale, setLocale } = useTheme()
   const pathname = usePathname()
@@ -28,7 +42,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <aside className="bg-[#0A2540] text-white p-4 space-y-2 hidden md:block">
         <div className="text-lg font-semibold mb-4">Admin</div>
         <nav className="space-y-2">
-          {nav.map((n) => {
+          {NAV.map((n) => {
             const active = pathname === n.href
             return (
               <Link
@@ -37,7 +51,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 className={cn('relative block px-3 py-2 rounded-md transition transform hover:scale-[0.99]', active ? 'bg-white/15 ring-1 ring-white/20' : 'hover:bg-white/10')}
               >
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden>{n.icon}</span>
+                  <n.icon size={16} />
                   <span>{t(locale, n.key)}</span>
                 </span>
                 {active ? <span className={cn('absolute top-1/2 -translate-y-1/2 h-5 w-1 bg-white/70 rounded', rtl ? 'right-0' : 'left-0')} /> : null}
@@ -91,7 +105,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <button onClick={() => setOpen(false)}>✕</button>
             </div>
             <nav className="space-y-2">
-              {nav.map((n) => {
+              {NAV.map((n) => {
                 const active = pathname === n.href
                 return (
                   <Link
@@ -101,7 +115,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     onClick={() => setOpen(false)}
                   >
                     <span className="inline-flex items-center gap-2">
-                  <span>{n.icon}</span>
+                  <n.icon size={16} />
                   <span>{t(locale, n.key)}</span>
                 </span>
                 {active ? <span className={cn('absolute top-1/2 -translate-y-1/2 h-5 w-1 bg-white/70 rounded', rtl ? 'right-0' : 'left-0')} /> : null}
@@ -133,3 +147,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
+
+
+
+

@@ -4,6 +4,7 @@ import { Shell } from '@/components/Shell';
 import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
+import { ExportButton } from '@/components/ExportButton';
 import { formatIQD, formatDate } from '@/lib/format';
 
 type Row = { id: number; unit: string; amount: number; dueDate: string; status: 'paid'|'due'|'overdue' };
@@ -16,6 +17,7 @@ export default function InstallmentsPage() {
   const [page, setPage] = useState(0);
   const pageSize = 50;
   const [hasMore, setHasMore] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchAll(page); }, [page]);
 
@@ -46,6 +48,8 @@ export default function InstallmentsPage() {
     return arr;
   }, [rows, query, status]);
 
+  const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
+
   const columns: Column<Row>[] = [
     { key: 'unit', label: 'Unit' },
     { key: 'dueDate', label: 'Due', render: (r) => formatDate(r.dueDate, 'en-IQ') },
@@ -63,6 +67,14 @@ export default function InstallmentsPage() {
     setRows(rs => rs.map(r => r.id === id ? { ...r, status: 'paid' } : r));
   }
 
+  async function bulkMarkPaid() {
+    const ids = selectedRows.map(r => r.id);
+    if (ids.length === 0) return;
+    await supabase.from('installments').update({ paid: true, paid_at: new Date().toISOString() }).in('id', ids);
+    setRows(rs => rs.map(r => ids.includes(r.id) ? { ...r, status: 'paid' } : r));
+    setSelected({});
+  }
+
   return (
     <Shell>
       <main className="p-6 space-y-4">
@@ -73,8 +85,32 @@ export default function InstallmentsPage() {
           <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='overdue'?'bg-muted/30':'')} onClick={() => setStatus('overdue')}>Past Due</button>
           <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='paid'?'bg-muted/30':'')} onClick={() => setStatus('paid')}>Paid</button>
         </div>
-        <Toolbar query={query} setQuery={setQuery} onSearch={() => {/* client filter */}} />
-        <DataTable columns={columns} rows={filtered} />
+        <Toolbar
+          query={query}
+          setQuery={setQuery}
+          onSearch={() => {/* client filter */}}
+          right={<div className="flex items-center gap-2">
+            <ExportButton filename="installments.csv" columns={[
+              { key: 'unit', label: 'Unit' },
+              { key: 'dueDate', label: 'Due' },
+              { key: 'amount', label: 'Amount' },
+              { key: 'status', label: 'Status' },
+            ]} rows={selectedRows.length ? selectedRows : filtered} />
+            <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkMarkPaid}>Mark Paid ({selectedRows.length})</button>
+          </div>}
+        />
+        <DataTable
+          columns={columns}
+          rows={filtered}
+          selectable
+          selected={selected}
+          onToggleRow={(r) => setSelected(s => ({ ...s, [String(r.id)]: !s[String(r.id)] }))}
+          onToggleAll={(checked) => {
+            const next: Record<string, boolean> = {};
+            if (checked) filtered.forEach(r => next[String(r.id)] = true);
+            setSelected(next);
+          }}
+        />
         <div className="flex items-center justify-end gap-2 mt-3">
           <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
           <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>

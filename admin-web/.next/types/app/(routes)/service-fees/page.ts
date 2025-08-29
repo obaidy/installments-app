@@ -1,4 +1,4 @@
-// File: /Users/ahmed/Desktop/installments-app/admin-web/app/(routes)/service-fees/page.tsx
+// File: C:\Users\pc\Desktop\installments-app\admin-web\app\(routes)\service-fees\page.tsx
 import * as entry from '../../../../../app/(routes)/service-fees/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

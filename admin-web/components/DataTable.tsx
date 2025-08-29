@@ -8,7 +8,21 @@ export type Column<T> = {
   width?: string;
 };
 
-export function DataTable<T extends { id: string | number }>({ columns, rows }: { columns: Column<T>[]; rows: T[] }) {
+export function DataTable<T extends { id: string | number }>({
+  columns,
+  rows,
+  selectable,
+  selected,
+  onToggleRow,
+  onToggleAll,
+}: {
+  columns: Column<T>[];
+  rows: T[];
+  selectable?: boolean;
+  selected?: Record<string | number, boolean>;
+  onToggleRow?: (row: T) => void;
+  onToggleAll?: (checked: boolean) => void;
+}) {
   const [sortBy, setSortBy] = useState<keyof T | null>(null);
   const [dir, setDir] = useState<'asc' | 'desc'>('asc');
 
@@ -37,11 +51,24 @@ export function DataTable<T extends { id: string | number }>({ columns, rows }: 
     <span className="ml-1 text-xs opacity-70">{active ? (dir === 'asc' ? '↑' : '↓') : '↕'}</span>
   );
 
+  const allSelected = selectable && selected && rows.length > 0 && rows.every((r) => selected[String(r.id)]);
+  const someSelected = selectable && selected && rows.some((r) => selected[String(r.id)]) && !allSelected;
+
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="min-w-full text-sm">
         <thead className="bg-muted/40 sticky top-0 z-10 backdrop-blur">
           <tr>
+            {selectable ? (
+              <th className="p-3 w-[42px]">
+                <input
+                  type="checkbox"
+                  aria-label="Select all rows"
+                  checked={!!allSelected}
+                  onChange={(e) => onToggleAll?.(e.target.checked)}
+                />
+              </th>
+            ) : null}
             {columns.map((c) => (
               <th
                 key={String(c.key)}
@@ -60,9 +87,22 @@ export function DataTable<T extends { id: string | number }>({ columns, rows }: 
             <tr
               key={String(r.id)}
               className={
-                'border-t border-border transition-colors ' + (i % 2 === 1 ? 'bg-muted/10 ' : '') + 'hover:bg-muted/20'
+                'border-t border-border transition-colors ' +
+                (i % 2 === 1 ? 'bg-muted/10 ' : '') +
+                (selectable && selected && selected[String(r.id)] ? ' bg-primary/5 ' : '') +
+                'hover:bg-muted/20'
               }
             >
+              {selectable ? (
+                <td className="p-3 w-[42px]">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select row ${String(r.id)}`}
+                    checked={!!selected?.[String(r.id)]}
+                    onChange={() => onToggleRow?.(r)}
+                  />
+                </td>
+              ) : null}
               {columns.map((c) => (
                 <td key={String(c.key)} className="p-3">
                   {c.render ? c.render(r) : (r[c.key] as any)}

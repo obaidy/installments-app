@@ -5,6 +5,7 @@ import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { Modal } from '@/components/ui/modal';
 import { supabase } from '@/lib/supabaseClient';
+import { ExportButton } from '@/components/ExportButton';
 
 type UnitRow = { id: number; name: string; complex?: string; complex_id?: number };
 type Complex = { id: number; name: string };
@@ -21,6 +22,8 @@ export default function UnitsPage() {
   const [name, setName] = useState('');
   const [complexId, setComplexId] = useState<number | ''>('');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [formError, setFormError] = useState<string>('');
 
   useEffect(() => { fetchAll(page); }, [page]);
 
@@ -42,6 +45,7 @@ export default function UnitsPage() {
     if (!q) return rows;
     return rows.filter(r => r.name.toLowerCase().includes(q) || (r.complex || '').toLowerCase().includes(q));
   }, [rows, query]);
+  const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<UnitRow>[] = [
     { key: 'name', label: 'Name' },
@@ -60,22 +64,38 @@ export default function UnitsPage() {
   ];
 
   async function onSave() {
-    if (!name.trim() || !complexId) { setOpen(false); return; }
-    if (editingId) {
-      await supabase.from('units').update({ name: name.trim(), complex_id: Number(complexId) }).eq('id', editingId);
-    } else {
-      const { data, error } = await supabase.from('units').insert({ name: name.trim(), complex_id: Number(complexId) }).select('id, complexes(name)').single();
-      if (!error && data) {
-        setRows(rs => [{ id: data.id as number, name: name.trim(), complex_id: Number(complexId), complex: complexes.find(c => c.id === Number(complexId))?.name }, ...rs]);
+    setFormError('');
+    const cid = typeof complexId === 'number' ? complexId : (complexId ? Number(complexId) : NaN);
+    if (!name.trim() || !cid || Number.isNaN(cid)) { setFormError('Please enter a name and select a complex.'); return; }
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('units').update({ name: name.trim(), complex_id: cid }).eq('id', editingId);
+        if (error) throw error;
+        await fetchAll(page);
+      } else {
+        const { data, error } = await supabase.from('units').insert({ name: name.trim(), complex_id: cid }).select('id').single();
+        if (error) throw error;
+        if (data) {
+          setRows(rs => [{ id: data.id as number, name: name.trim(), complex_id: cid, complex: complexes.find(c => c.id === cid)?.name }, ...rs]);
+        }
       }
+      setOpen(false); setEditingId(null);
+    } catch (e: any) {
+      setFormError(e?.message || 'Failed to save unit');
     }
-    setOpen(false); setEditingId(null);
-    fetchAll();
   }
 
   async function removeUnit(id: number) {
     await supabase.from('units').delete().eq('id', id);
     setRows(rs => rs.filter(r => r.id !== id));
+  }
+
+  async function bulkRemove() {
+    const ids = selectedRows.map(r => r.id);
+    if (!ids.length) return;
+    await supabase.from('units').delete().in('id', ids);
+    setRows(rs => rs.filter(r => !ids.includes(r.id)));
+    setSelected({});
   }
 
   return (
@@ -85,9 +105,25 @@ export default function UnitsPage() {
         query={query}
         setQuery={setQuery}
         onSearch={() => {/* client-side filter */}}
-        right={<button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>Add Unit</button>}
+        right={<div className="flex items-center gap-2"><ExportButton filename="units.csv" columns={[
+          { key: 'name', label: 'Name' },
+          { key: 'complex', label: 'Complex' },
+        ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Delete Selected ({selectedRows.length})</button>
+        <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>Add Unit</button></div>}
       />
-      <DataTable columns={columns} rows={filtered} />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        selectable
+        selected={selected}
+        onToggleRow={(r) => setSelected(s => ({ ...s, [String(r.id)]: !s[String(r.id)] }))}
+        onToggleAll={(checked) => {
+          const next: Record<string, boolean> = {};
+          if (checked) filtered.forEach(r => next[String(r.id)] = true);
+          setSelected(next);
+        }}
+      />
       {loading ? <div className="mt-2 text-sm opacity-70">Loading…</div> : null}
       <div className="flex items-center justify-end gap-2 mt-3">
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
@@ -99,10 +135,18 @@ export default function UnitsPage() {
           <label className="text-sm">Name</label>
           <input className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
           <label className="text-sm">Complex</label>
-          <select className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={complexId} onChange={(e) => setComplexId(Number(e.target.value))}>
+          <select
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={complexId}
+            onChange={(e) => {
+              const v = e.target.value;
+              setComplexId(v ? Number(v) : '');
+            }}
+          >
             <option value="">Select…</option>
             {complexes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {formError ? <div className="text-red-600 text-sm mt-1">{formError}</div> : null}
         </div>
         <div className="mt-3 flex justify-end">
           <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={onSave}>Save</button>
@@ -111,3 +155,4 @@ export default function UnitsPage() {
     </Shell>
   );
 }
+

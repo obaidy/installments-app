@@ -48,8 +48,10 @@ export default function LoginScreen() {
 
     console.log('[Login] role:', role);
     if (role === 'admin') {
-      console.log('[Login] redirecting to /admin-web (Next admin)');
-      router.replace('/admin-web');
+      // Admins should use the web dashboard
+      setError('Admins must use the web dashboard. Please sign in on the admin website.');
+      await (await import('../../lib/supabaseClient')).signOut();
+      return;
     } else if (role === 'manager') {
       console.log('[Login] redirecting to /(manager)');
       router.replace('/(manager)');

@@ -4,6 +4,7 @@ import { Shell } from '@/components/Shell';
 import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
+import { ExportButton } from '@/components/ExportButton';
 
 type Role = 'admin' | 'manager' | 'client';
 type Row = { id: string; role: Role; email?: string | null; name?: string | null };
@@ -15,6 +16,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(0);
   const pageSize = 50;
   const [hasMore, setHasMore] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchPage(page); }, [page]);
 
@@ -38,6 +40,7 @@ export default function UsersPage() {
     if (!q) return rows;
     return rows.filter(r => r.id.toLowerCase().includes(q) || r.role.toLowerCase().includes(q));
   }, [rows, query]);
+  const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<Row>[] = [
     { key: 'email', label: 'Email', render: (r) => r.email || r.id },
@@ -63,6 +66,20 @@ export default function UsersPage() {
     await supabase.from('user_roles').delete().eq('user_id', userId);
     setRows(rs => rs.filter(r => r.id !== userId));
   }
+  async function bulkMake(role: Role) {
+    const ids = selectedRows.map(r => r.id);
+    if (!ids.length) return;
+    await supabase.from('user_roles').upsert(ids.map(id => ({ user_id: id, role })));
+    setRows(rs => rs.map(r => ids.includes(r.id) ? { ...r, role } : r));
+    setSelected({});
+  }
+  async function bulkRemove() {
+    const ids = selectedRows.map(r => r.id);
+    if (!ids.length) return;
+    await supabase.from('user_roles').delete().in('user_id', ids);
+    setRows(rs => rs.filter(r => !ids.includes(r.id)));
+    setSelected({});
+  }
   function nextRole(role: Role): Role {
     if (role === 'admin') return 'manager';
     if (role === 'manager') return 'client';
@@ -72,8 +89,30 @@ export default function UsersPage() {
   return (
     <Shell>
       <h1 className="text-2xl font-semibold mb-2">Users</h1>
-      <Toolbar query={query} setQuery={setQuery} onSearch={() => { /* client-side filter */ }} right={<InviteButton onInvited={() => window.location.reload()} />} />
-      <DataTable columns={columns} rows={filtered} />
+      <Toolbar
+        query={query}
+        setQuery={setQuery}
+        onSearch={() => { /* client-side filter */ }}
+        right={<div className="flex items-center gap-2"><ExportButton filename="users.csv" columns={[
+          { key: 'email', label: 'Email' },
+          { key: 'role', label: 'Role' },
+        ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={() => bulkMake('manager')}>Make Manager ({selectedRows.length})</button>
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Remove ({selectedRows.length})</button>
+        <InviteButton onInvited={() => window.location.reload()} /></div>}
+      />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        selectable
+        selected={selected}
+        onToggleRow={(r) => setSelected(s => ({ ...s, [String(r.id)]: !s[String(r.id)] }))}
+        onToggleAll={(checked) => {
+          const next: Record<string, boolean> = {};
+          if (checked) filtered.forEach(r => next[String(r.id)] = true);
+          setSelected(next);
+        }}
+      />
       <div className="flex items-center justify-end gap-2 mt-3">
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>

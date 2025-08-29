@@ -1,11 +1,16 @@
 {
-  "/page": "app/page.js",
-  "/(routes)/users/page": "app/(routes)/users/page.js",
-  "/reconciliation/page": "app/reconciliation/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/(routes)/payments/page": "app/(routes)/payments/page.js",
+  "/(routes)/complexes/page": "app/(routes)/complexes/page.js",
   "/(routes)/service-fees/page": "app/(routes)/service-fees/page.js",
+  "/(routes)/users/page": "app/(routes)/users/page.js",
   "/(routes)/installments/page": "app/(routes)/installments/page.js",
-  "/(routes)/units/page": "app/(routes)/units/page.js",
   "/approvals/page": "app/approvals/page.js",
-  "/(routes)/complexes/page": "app/(routes)/complexes/page.js"
+  "/dunning/page": "app/dunning/page.js",
+  "/(routes)/units/page": "app/(routes)/units/page.js",
+  "/not-authorized/page": "app/not-authorized/page.js",
+  "/reconciliation/page": "app/reconciliation/page.js",
+  "/page": "app/page.js",
+  "/auth/bridge/page": "app/auth/bridge/page.js",
+  "/auth/login/page": "app/auth/login/page.js"
 }

@@ -15,7 +15,7 @@ Set `EXPO_PUBLIC_API_URL` in `.env` so the app can reach the API.
 ## Features
 
 - Auth and roles via Supabase
-- Admin dashboard for complexes, users, and units
+- Admin dashboard (Next.js) for complexes, users, units, payments, reconciliation, approvals
 - Client flows for viewing installments and paying
 - Payments via Stripe or Qi (toggle with `USE_QI`)
 - Webhook handling to reconcile payments and update records
@@ -23,7 +23,7 @@ Set `EXPO_PUBLIC_API_URL` in `.env` so the app can reach the API.
 
 ## Project Structure
 
-- `app/`: Expo Router screens (client + manager). Admin now lives in `admin-web/`.
+- `app/`: Expo Router screens (client + manager). Admin lives in `admin-web/` (Next.js).
 - `components/`, `hooks/`, `lib/`: shared UI and utilities
 - `server/`: Express server, payments routes, and gateways
 - `scripts/`: maintenance/cron scripts (e.g., `schedule-charges.ts`)
@@ -68,7 +68,7 @@ Note: SQL files are not included in this repo. Create the schema and RLS policie
 
 ## Admin Pages
 
-Admin UI lives in `admin-web/` (Next.js app). The mobile app routes admins to a WebView (`/admin-web`) which SSO-authenticates into `admin-web`.
+Admin UI lives in `admin-web/` (Next.js app). The mobile app is for clients and managers; admins should sign in via the web dashboard.
 
 ## Scripts
 

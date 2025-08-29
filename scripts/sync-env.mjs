@@ -24,9 +24,7 @@ const env = Object.fromEntries(
 
 const supabaseUrl = env.SUPABASE_URL || env.EXPO_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnon = env.SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const adminBase = env.EXPO_PUBLIC_ADMIN_WEB_URL || env.NEXT_PUBLIC_ADMIN_WEB_URL || '';
-
-const nextEnv = `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}\nNEXT_PUBLIC_SUPABASE_ANON_KEY=${supabaseAnon}\nNEXT_PUBLIC_ADMIN_WEB_URL=${adminBase}\n`;
+const nextEnv = `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}\nNEXT_PUBLIC_SUPABASE_ANON_KEY=${supabaseAnon}\n`;
 
 const adminDir = path.join(root, 'admin-web');
 const adminEnvLocal = path.join(adminDir, '.env.local');

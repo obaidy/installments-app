@@ -4,6 +4,7 @@ import { Shell } from '@/components/Shell';
 import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
+import { ExportButton } from '@/components/ExportButton';
 import { formatIQD, formatDate } from '@/lib/format';
 
 type Row = { id: number; unit: string; amount: number; status: 'paid'|'pending'|'failed'|'cancelled'; paidAt?: string | null };
@@ -16,6 +17,7 @@ export default function PaymentsPage() {
   const [page, setPage] = useState(0);
   const pageSize = 50;
   const [hasMore, setHasMore] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchAll(page); }, [page]);
 
@@ -40,6 +42,7 @@ export default function PaymentsPage() {
     if (q) arr = arr.filter(r => r.unit.toLowerCase().includes(q));
     return arr;
   }, [rows, query, status]);
+  const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<Row>[] = [
     { key: 'unit', label: 'Unit' },
@@ -59,8 +62,29 @@ export default function PaymentsPage() {
           <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='failed'?'bg-muted/30':'')} onClick={() => setStatus('failed')}>Failed</button>
           <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='cancelled'?'bg-muted/30':'')} onClick={() => setStatus('cancelled')}>Cancelled</button>
         </div>
-        <Toolbar query={query} setQuery={setQuery} onSearch={() => {/* client filter */}} />
-        <DataTable columns={columns} rows={filtered} />
+        <Toolbar
+          query={query}
+          setQuery={setQuery}
+          onSearch={() => {/* client filter */}}
+          right={<ExportButton filename="payments.csv" columns={[
+            { key: 'unit', label: 'Unit' },
+            { key: 'amount', label: 'Amount' },
+            { key: 'status', label: 'Status' },
+            { key: 'paidAt', label: 'Paid At' },
+          ]} rows={selectedRows.length ? selectedRows : filtered} />}
+        />
+        <DataTable
+          columns={columns}
+          rows={filtered}
+          selectable
+          selected={selected}
+          onToggleRow={(r) => setSelected(s => ({ ...s, [String(r.id)]: !s[String(r.id)] }))}
+          onToggleAll={(checked) => {
+            const next: Record<string, boolean> = {};
+            if (checked) filtered.forEach(r => next[String(r.id)] = true);
+            setSelected(next);
+          }}
+        />
         <div className="flex items-center justify-end gap-2 mt-3">
           <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
           <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>
