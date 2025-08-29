@@ -5,11 +5,14 @@ import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
+import { useTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Role = 'admin' | 'manager' | 'client';
 type Row = { id: string; role: Role; email?: string | null; name?: string | null };
 
 export default function UsersPage() {
+  const { locale } = useTheme();
   const [query, setQuery] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,12 +50,12 @@ export default function UsersPage() {
     { key: 'role', label: 'Role', width: '140px', render: (r) => <span className="inline-flex rounded-full border border-border px-2 py-0.5 text-xs bg-muted/30">{r.role.toUpperCase()}</span> },
     {
       key: 'id',
-      label: 'Actions',
+      label: t(locale,'actions'),
       width: '260px',
       render: (r) => (
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => changeRole(r.id, nextRole(r.role))}>Make {nextRole(r.role)}</button>
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUser(r.id)}>Remove</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => changeRole(r.id, nextRole(r.role))}>{t(locale,'edit')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUser(r.id)}>{t(locale,'delete')}</button>
         </div>
       )
     },
@@ -88,7 +91,7 @@ export default function UsersPage() {
 
   return (
     <Shell>
-      <h1 className="text-2xl font-semibold mb-2">Users</h1>
+      <h1 className="text-2xl font-semibold mb-2">{t(locale,'usersTitle')}</h1>
       <Toolbar
         query={query}
         setQuery={setQuery}
@@ -97,8 +100,8 @@ export default function UsersPage() {
           { key: 'email', label: 'Email' },
           { key: 'role', label: 'Role' },
         ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
-        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={() => bulkMake('manager')}>Make Manager ({selectedRows.length})</button>
-        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Remove ({selectedRows.length})</button>
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={() => bulkMake('manager')}>{t(locale,'edit')} ({selectedRows.length})</button>
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>{t(locale,'delete')} ({selectedRows.length})</button>
         <InviteButton onInvited={() => window.location.reload()} /></div>}
       />
       <DataTable

@@ -75,7 +75,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <button className="md:hidden inline-flex items-center justify-center rounded-md px-2 py-1 bg-[#0A2540] text-white" onClick={() => setOpen(true)}>
               ☰
             </button>
-            <div className="text-lg font-semibold">Installments Admin</div>
+            <div className="text-lg font-semibold">{t(locale,'adminTitle')}</div>
           </div>
           <div className="flex items-center gap-3 text-sm opacity-80">
             <span>{locale.toUpperCase()}</span>

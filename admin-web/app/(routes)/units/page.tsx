@@ -6,12 +6,15 @@ import { DataTable, type Column } from '@/components/DataTable';
 import { Modal } from '@/components/ui/modal';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
+import { useTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type UnitRow = { id: number; name: string; complex?: string; complex_id?: number; user_id?: string | null; owner?: string | null };
 type Complex = { id: number; name: string };
 type Client = { id: string; email?: string | null; name?: string | null };
 
 export default function UnitsPage() {
+  const { locale } = useTheme();
   const [query, setQuery] = useState('');
   const [rows, setRows] = useState<UnitRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,18 +58,18 @@ export default function UnitsPage() {
   const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<UnitRow>[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'complex', label: 'Complex' },
-    { key: 'owner', label: 'Owner', render: (r) => r.owner || '-' },
+    { key: 'name', label: t(locale,'name') },
+    { key: 'complex', label: t(locale,'complex') },
+    { key: 'owner', label: t(locale,'owner'), render: (r) => r.owner || '-' },
     {
       key: 'id',
-      label: 'Actions',
+      label: t(locale,'actions'),
       width: '260px',
       render: (r) => (
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setEditingId(r.id); setName(r.name); setComplexId(r.complex_id || ''); setOpen(true); }}>Edit</button>
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setAssignUnitId(r.id); setAssignUserId(r.user_id || ''); setAssignOpen(true); }}>{r.user_id ? 'Change Owner' : 'Assign Owner'}</button>
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUnit(r.id)}>Delete</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setEditingId(r.id); setName(r.name); setComplexId(r.complex_id || ''); setOpen(true); }}>{t(locale,'edit')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setAssignUnitId(r.id); setAssignUserId(r.user_id || ''); setAssignOpen(true); }}>{r.user_id ? t(locale,'changeOwner') : t(locale,'assignOwner')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUnit(r.id)}>{t(locale,'delete')}</button>
         </div>
       )
     },
@@ -109,19 +112,20 @@ export default function UnitsPage() {
 
   return (
     <Shell>
-      <h1 className="text-2xl font-semibold mb-2">Units</h1>
+      <h1 className="text-2xl font-semibold mb-2">{t(locale,'unitsTitle')}</h1>
       <Toolbar
         query={query}
         setQuery={setQuery}
         onSearch={() => {/* client-side filter */}}
+        placeholder={t(locale,'searchPlaceholder')}
         right={<div className="flex items-center gap-2">
           <ExportButton filename="units.csv" columns={[
-            { key: 'name', label: 'Name' },
-            { key: 'complex', label: 'Complex' },
-            { key: 'owner', label: 'Owner' },
+            { key: 'name', label: t(locale,'name') },
+            { key: 'complex', label: t(locale,'complex') },
+            { key: 'owner', label: t(locale,'owner') },
           ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
-          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Delete Selected ({selectedRows.length})</button>
-          <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>Add Unit</button>
+          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>{t(locale,'deleteSelected')} ({selectedRows.length})</button>
+          <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>{t(locale,'addUnit')}</button>
         </div>}
       />
       <DataTable
@@ -136,17 +140,17 @@ export default function UnitsPage() {
           setSelected(next);
         }}
       />
-      {loading ? <div className="mt-2 text-sm opacity-70">Loading...</div> : null}
+      {loading ? <div className="mt-2 text-sm opacity-70">{t(locale,'loading')}</div> : null}
       <div className="flex items-center justify-end gap-2 mt-3">
-        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
-        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>{t(locale,'prev')}</button>
+        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>{t(locale,'next')}</button>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={editingId ? 'Edit Unit' : 'Add Unit'}>
+      <Modal open={open} onClose={() => setOpen(false)} title={editingId ? t(locale,'edit') + ' ' + t(locale,'units') : t(locale,'addUnit')}>
         <div className="grid gap-2">
-          <label className="text-sm">Name</label>
+          <label className="text-sm">{t(locale,'name')}</label>
           <input className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
-          <label className="text-sm">Complex</label>
+          <label className="text-sm">{t(locale,'complex')}</label>
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={complexId}
@@ -155,21 +159,21 @@ export default function UnitsPage() {
               setComplexId(v ? Number(v) : '');
             }}
           >
-            <option value="">Select...</option>
+            <option value="">{t(locale,'select')}</option>
             {complexes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           {/* Owner is assigned after creation via the Assign Owner action */}
           {formError ? <div className="text-red-600 text-sm mt-1">{formError}</div> : null}
         </div>
         <div className="mt-3 flex justify-end">
-          <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={onSave}>Save</button>
+          <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={onSave}>{t(locale,'save')}</button>
         </div>
       </Modal>
-      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Owner">
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title={t(locale,'assignOwner')}>
         <div className="grid gap-2">
-          <label className="text-sm">Client</label>
+          <label className="text-sm">{t(locale,'client')}</label>
           <select className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)}>
-            <option value="">Select...</option>
+            <option value="">{t(locale,'select')}</option>
             {clients.map(u => (
               <option key={u.id} value={u.id}>{u.email || u.name || u.id}</option>
             ))}
@@ -181,20 +185,19 @@ export default function UnitsPage() {
             await supabase.from('units').update({ user_id: null }).eq('id', assignUnitId);
             setRows(rs => rs.map(r => r.id === assignUnitId ? { ...r, user_id: null, owner: null } : r));
             setAssignOpen(false);
-          }}>Unassign</button>
+          }}>{t(locale,'unassign')}</button>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setAssignOpen(false)}>Cancel</button>
+            <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setAssignOpen(false)}>{t(locale,'cancel')}</button>
             <button className="px-3 py-1.5 rounded-md border border-border" onClick={async () => {
               if (!assignUnitId || !assignUserId) return;
               await supabase.from('units').update({ user_id: assignUserId }).eq('id', assignUnitId);
               const u = clients.find(c => c.id === assignUserId);
               setRows(rs => rs.map(r => r.id === assignUnitId ? { ...r, user_id: assignUserId, owner: u?.email || u?.name || assignUserId } : r));
               setAssignOpen(false);
-            }}>Save</button>
+            }}>{t(locale,'save')}</button>
           </div>
         </div>
       </Modal>
     </Shell>
   );
 }
-

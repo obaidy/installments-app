@@ -6,10 +6,13 @@ import { DataTable, type Column } from '@/components/DataTable';
 import { Modal } from '@/components/ui/modal';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
+import { useTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Complex = { id: number; name: string; code?: string | null; units?: number };
 
 export default function ComplexesPage() {
+  const { locale } = useTheme();
   const [query, setQuery] = useState('');
   const [rows, setRows] = useState<Complex[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,7 @@ export default function ComplexesPage() {
   const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<Complex>[] = [
-    { key: 'name', label: 'Name', render: (r) => (
+    { key: 'name', label: t(locale,'name'), render: (r) => (
       editingId === r.id ? (
         <span className="inline-flex items-center gap-2">
           <span>🏢</span>
@@ -59,27 +62,27 @@ export default function ComplexesPage() {
             await supabase.from('complexes').update({ name: tempName.trim() }).eq('id', r.id);
             setRows(rs => rs.map(x => x.id === r.id ? { ...x, name: tempName.trim() } : x));
             setEditingId(null);
-          }}>Save</button>
-          <button className="px-2 py-1 text-sm rounded-md border border-border" onClick={() => setEditingId(null)}>Cancel</button>
+          }}>{t(locale,'save')}</button>
+          <button className="px-2 py-1 text-sm rounded-md border border-border" onClick={() => setEditingId(null)}>{t(locale,'cancel')}</button>
         </span>
       ) : (
         <span className="inline-flex items-center gap-2">
           <span>🏢</span>
           <span>{r.name}</span>
-          <button className="px-2 py-0.5 text-xs rounded-md border border-border" onClick={() => { setEditingId(r.id); setTempName(r.name); }}>Edit</button>
+          <button className="px-2 py-0.5 text-xs rounded-md border border-border" onClick={() => { setEditingId(r.id); setTempName(r.name); }}>{t(locale,'edit')}</button>
         </span>
       )
     ) },
-    { key: 'code', label: 'Code', render: (r) => <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs bg-muted/30">{r.code || '-'}</span> },
-    { key: 'units', label: 'Units', width: '120px', render: (r) => <span className="opacity-80">{r.units ?? 0} units</span> },
+    { key: 'code', label: t(locale,'code'), render: (r) => <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs bg-muted/30">{r.code || '-'}</span> },
+    { key: 'units', label: t(locale,'units'), width: '120px', render: (r) => <span className="opacity-80">{r.units ?? 0} {t(locale,'units')}</span> },
     {
       key: 'id',
-      label: 'Actions',
+      label: t(locale,'actions'),
       width: '200px',
       render: (r) => (
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setName(r.name); setCode(r.code || ''); setOpen(true); setEditingId(r.id); }}>Edit</button>
-          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setConfirmId(r.id)}>Delete</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setName(r.name); setCode(r.code || ''); setOpen(true); setEditingId(r.id); }}>{t(locale,'edit')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setConfirmId(r.id)}>{t(locale,'delete')}</button>
         </div>
       )
     },

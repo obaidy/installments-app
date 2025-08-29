@@ -5,11 +5,14 @@ import { Toolbar } from '@/components/Toolbar';
 import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
+import { useTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 import { formatIQD, formatDate } from '@/lib/format';
 
 type Row = { id: number; unit: string; amount: number; status: 'paid'|'pending'|'failed'|'cancelled'; paidAt?: string | null };
 
 export default function PaymentsPage() {
+  const { locale } = useTheme();
   const [query, setQuery] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [status, setStatus] = useState<'all'|'paid'|'pending'|'failed'|'cancelled'>('all');
@@ -45,29 +48,30 @@ export default function PaymentsPage() {
   const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
 
   const columns: Column<Row>[] = [
-    { key: 'unit', label: 'Unit' },
-    { key: 'amount', label: 'Amount', render: (r) => formatIQD(r.amount, 'en-IQ') },
+    { key: 'unit', label: t(locale,'complex') },
+    { key: 'amount', label: 'Amount', render: (r) => formatIQD(r.amount, locale === 'ar' ? 'ar-IQ' : locale === 'ku' ? 'ku' : 'en-IQ') },
     { key: 'status', label: 'Status', render: (r) => <span className={"px-2 py-0.5 rounded-full border text-xs "+(r.status==='paid'? 'bg-green-100 text-green-700 border-green-200' : r.status==='pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : r.status==='failed' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-gray-100 text-gray-700 border-gray-200')}>{r.status.toUpperCase()}</span> },
-    { key: 'paidAt', label: 'Paid At', render: (r) => r.paidAt ? formatDate(r.paidAt, 'en-IQ') : '-' },
+    { key: 'paidAt', label: 'Paid At', render: (r) => r.paidAt ? formatDate(r.paidAt, locale === 'ar' ? 'ar-IQ' : locale === 'ku' ? 'ku' : 'en-IQ') : '-' },
   ];
 
   return (
     <Shell>
       <main className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Payments</h1>
+        <h1 className="text-2xl font-semibold">{t(locale,'paymentsTitle')}</h1>
         <div className="flex items-center gap-2">
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='all'?'bg-muted/30':'')} onClick={() => setStatus('all')}>All</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='paid'?'bg-muted/30':'')} onClick={() => setStatus('paid')}>Paid</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='pending'?'bg-muted/30':'')} onClick={() => setStatus('pending')}>Pending</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='failed'?'bg-muted/30':'')} onClick={() => setStatus('failed')}>Failed</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='cancelled'?'bg-muted/30':'')} onClick={() => setStatus('cancelled')}>Cancelled</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='all'?'bg-muted/30':'')} onClick={() => setStatus('all')}>{t(locale,'filterAll')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='paid'?'bg-muted/30':'')} onClick={() => setStatus('paid')}>{t(locale,'filterPaid')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='pending'?'bg-muted/30':'')} onClick={() => setStatus('pending')}>{t(locale,'statusPending')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='failed'?'bg-muted/30':'')} onClick={() => setStatus('failed')}>{t(locale,'statusFailed')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='cancelled'?'bg-muted/30':'')} onClick={() => setStatus('cancelled')}>{t(locale,'statusCancelled')}</button>
         </div>
         <Toolbar
           query={query}
           setQuery={setQuery}
           onSearch={() => {/* client filter */}}
+          placeholder={t(locale,'searchPlaceholder')}
           right={<ExportButton filename="payments.csv" columns={[
-            { key: 'unit', label: 'Unit' },
+            { key: 'unit', label: t(locale,'complex') },
             { key: 'amount', label: 'Amount' },
             { key: 'status', label: 'Status' },
             { key: 'paidAt', label: 'Paid At' },

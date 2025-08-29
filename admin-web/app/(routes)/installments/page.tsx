@@ -6,10 +6,13 @@ import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
 import { formatIQD, formatDate } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Row = { id: number; unit: string; amount: number; dueDate: string; status: 'paid'|'due'|'overdue' };
 
 export default function InstallmentsPage() {
+  const { locale } = useTheme();
   const [query, setQuery] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [status, setStatus] = useState<'all'|'paid'|'due'|'overdue'>('all');
@@ -49,15 +52,20 @@ export default function InstallmentsPage() {
   }, [rows, query, status]);
 
   const selectedRows = useMemo(() => filtered.filter(r => selected[String(r.id)]), [filtered, selected]);
+  const localeCode = locale === 'ar' ? 'ar-IQ' : (locale === 'ku' ? 'ku' : 'en-IQ');
 
   const columns: Column<Row>[] = [
-    { key: 'unit', label: 'Unit' },
-    { key: 'dueDate', label: 'Due', render: (r) => formatDate(r.dueDate, 'en-IQ') },
-    { key: 'amount', label: 'Amount', render: (r) => formatIQD(r.amount, 'en-IQ') },
-    { key: 'status', label: 'Status', render: (r) => <span className={"px-2 py-0.5 rounded-full border text-xs "+(r.status==='paid'? 'bg-green-100 text-green-700 border-green-200' : r.status==='overdue' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200')}>{r.status.toUpperCase()}</span> },
-    { key: 'id', label: 'Actions', width: '160px', render: (r) => (
+    { key: 'unit', label: t(locale,'complex') },
+    { key: 'dueDate', label: t(locale,'filterDue'), render: (r) => formatDate(r.dueDate, localeCode) },
+    { key: 'amount', label: 'Amount', render: (r) => formatIQD(r.amount, localeCode) },
+    { key: 'status', label: 'Status', render: (r) => {
+      const cls = r.status==='paid' ? 'bg-green-100 text-green-700 border-green-200' : r.status==='overdue' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      const label = r.status==='paid' ? t(locale,'statusPaid') : r.status==='overdue' ? t(locale,'statusOverdue') : t(locale,'statusDue');
+      return <span className={'px-2 py-0.5 rounded-full border text-xs '+cls}>{label}</span>;
+    } },
+    { key: 'id', label: t(locale,'actions'), width: '160px', render: (r) => (
       <div className="flex gap-2">
-        {r.status !== 'paid' ? <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => markPaid(r.id)}>Mark Paid</button> : null}
+        {r.status !== 'paid' ? <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => markPaid(r.id)}>{t(locale,'markPaid')}</button> : null}
       </div>
     )},
   ];
@@ -78,12 +86,12 @@ export default function InstallmentsPage() {
   return (
     <Shell>
       <main className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Installments</h1>
+        <h1 className="text-2xl font-semibold">{t(locale,'installmentsTitle')}</h1>
         <div className="flex items-center gap-2">
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='all'?'bg-muted/30':'')} onClick={() => setStatus('all')}>All</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='due'?'bg-muted/30':'')} onClick={() => setStatus('due')}>Due</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='overdue'?'bg-muted/30':'')} onClick={() => setStatus('overdue')}>Past Due</button>
-          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='paid'?'bg-muted/30':'')} onClick={() => setStatus('paid')}>Paid</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='all'?'bg-muted/30':'')} onClick={() => setStatus('all')}>{t(locale,'filterAll')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='due'?'bg-muted/30':'')} onClick={() => setStatus('due')}>{t(locale,'filterDue')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='overdue'?'bg-muted/30':'')} onClick={() => setStatus('overdue')}>{t(locale,'filterPastDue')}</button>
+          <button className={"px-3 py-1.5 rounded-md border border-border "+(status==='paid'?'bg-muted/30':'')} onClick={() => setStatus('paid')}>{t(locale,'filterPaid')}</button>
         </div>
         <Toolbar
           query={query}
@@ -91,12 +99,12 @@ export default function InstallmentsPage() {
           onSearch={() => {/* client filter */}}
           right={<div className="flex items-center gap-2">
             <ExportButton filename="installments.csv" columns={[
-              { key: 'unit', label: 'Unit' },
-              { key: 'dueDate', label: 'Due' },
+              { key: 'unit', label: t(locale,'complex') },
+              { key: 'dueDate', label: t(locale,'filterDue') },
               { key: 'amount', label: 'Amount' },
               { key: 'status', label: 'Status' },
             ]} rows={selectedRows.length ? selectedRows : filtered} />
-            <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkMarkPaid}>Mark Paid ({selectedRows.length})</button>
+            <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkMarkPaid}>{t(locale,'bulkMarkPaid')} ({selectedRows.length})</button>
           </div>}
         />
         <DataTable
@@ -112,8 +120,8 @@ export default function InstallmentsPage() {
           }}
         />
         <div className="flex items-center justify-end gap-2 mt-3">
-          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
-          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>
+          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>{t(locale,'prev')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>{t(locale,'next')}</button>
         </div>
         {loading ? <div className="mt-2 text-sm opacity-70">Loading…</div> : null}
       </main>
