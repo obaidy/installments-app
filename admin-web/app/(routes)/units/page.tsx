@@ -7,8 +7,9 @@ import { Modal } from '@/components/ui/modal';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
 
-type UnitRow = { id: number; name: string; complex?: string; complex_id?: number };
+type UnitRow = { id: number; name: string; complex?: string; complex_id?: number; user_id?: string | null; owner?: string | null };
 type Complex = { id: number; name: string };
+type Client = { id: string; email?: string | null; name?: string | null };
 
 export default function UnitsPage() {
   const [query, setQuery] = useState('');
@@ -24,18 +25,24 @@ export default function UnitsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [formError, setFormError] = useState<string>('');
+  const [clients, setClients] = useState<Client[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignUnitId, setAssignUnitId] = useState<number | null>(null);
+  const [assignUserId, setAssignUserId] = useState<string>('');
 
   useEffect(() => { fetchAll(page); }, [page]);
 
   async function fetchAll(p: number) {
     setLoading(true);
     const from = p * pageSize; const to = from + pageSize - 1;
-    const [{ data: units }, { data: compl }] = await Promise.all([
-      supabase.from('units').select('id, name, complex_id, complexes(name)').order('name').range(from, to),
+    const [{ data: units }, { data: compl }, { data: clientRows }] = await Promise.all([
+      supabase.from('units').select('id, name, complex_id, user_id, complexes(name), profiles(email)').order('name').range(from, to),
       supabase.from('complexes').select('id, name').order('name'),
+      supabase.from('user_roles').select('user_id, role, profiles(email, full_name)').eq('role','client').order('profiles(email)')
     ]);
-    setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: u.complexes?.name as string | undefined })));
+    setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: u.complexes?.name as string | undefined, user_id: (u.user_id as string|undefined)|| null, owner: (u.profiles?.email as string|undefined)|| null })));
     setComplexes((compl as any[]) as Complex[] || []);
+    setClients(((clientRows as any[]) || []).map(r => ({ id: r.user_id as string, email: r.profiles?.email as string | undefined, name: r.profiles?.full_name as string | undefined })) as Client[]);
     setHasMore((((units as any[]) || []).length) === pageSize);
     setLoading(false);
   }
@@ -50,13 +57,15 @@ export default function UnitsPage() {
   const columns: Column<UnitRow>[] = [
     { key: 'name', label: 'Name' },
     { key: 'complex', label: 'Complex' },
+    { key: 'owner', label: 'Owner', render: (r) => r.owner || '-' },
     {
       key: 'id',
       label: 'Actions',
-      width: '200px',
+      width: '260px',
       render: (r) => (
         <div className="flex gap-2">
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setEditingId(r.id); setName(r.name); setComplexId(r.complex_id || ''); setOpen(true); }}>Edit</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setAssignUnitId(r.id); setAssignUserId(r.user_id || ''); setAssignOpen(true); }}>{r.user_id ? 'Change Owner' : 'Assign Owner'}</button>
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUnit(r.id)}>Delete</button>
         </div>
       )
@@ -105,12 +114,15 @@ export default function UnitsPage() {
         query={query}
         setQuery={setQuery}
         onSearch={() => {/* client-side filter */}}
-        right={<div className="flex items-center gap-2"><ExportButton filename="units.csv" columns={[
-          { key: 'name', label: 'Name' },
-          { key: 'complex', label: 'Complex' },
-        ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
-        <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Delete Selected ({selectedRows.length})</button>
-        <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>Add Unit</button></div>}
+        right={<div className="flex items-center gap-2">
+          <ExportButton filename="units.csv" columns={[
+            { key: 'name', label: 'Name' },
+            { key: 'complex', label: 'Complex' },
+            { key: 'owner', label: 'Owner' },
+          ]} rows={(selectedRows.length ? selectedRows : filtered) as any} />
+          <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={selectedRows.length===0} onClick={bulkRemove}>Delete Selected ({selectedRows.length})</button>
+          <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={() => { setEditingId(null); setName(''); setComplexId(''); setOpen(true); }}>Add Unit</button>
+        </div>}
       />
       <DataTable
         columns={columns}
@@ -124,7 +136,7 @@ export default function UnitsPage() {
           setSelected(next);
         }}
       />
-      {loading ? <div className="mt-2 text-sm opacity-70">Loading…</div> : null}
+      {loading ? <div className="mt-2 text-sm opacity-70">Loading...</div> : null}
       <div className="flex items-center justify-end gap-2 mt-3">
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))}>Prev</button>
         <button className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50" disabled={!hasMore} onClick={() => setPage(p => p+1)}>Next</button>
@@ -143,13 +155,43 @@ export default function UnitsPage() {
               setComplexId(v ? Number(v) : '');
             }}
           >
-            <option value="">Select…</option>
+            <option value="">Select...</option>
             {complexes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {/* Owner is assigned after creation via the Assign Owner action */}
           {formError ? <div className="text-red-600 text-sm mt-1">{formError}</div> : null}
         </div>
         <div className="mt-3 flex justify-end">
           <button className="rounded-md bg-primary text-primaryForeground px-3 py-2 text-sm" onClick={onSave}>Save</button>
+        </div>
+      </Modal>
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Owner">
+        <div className="grid gap-2">
+          <label className="text-sm">Client</label>
+          <select className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)}>
+            <option value="">Select...</option>
+            {clients.map(u => (
+              <option key={u.id} value={u.id}>{u.email || u.name || u.id}</option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-3 flex justify-between">
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={async () => {
+            if (!assignUnitId) return;
+            await supabase.from('units').update({ user_id: null }).eq('id', assignUnitId);
+            setRows(rs => rs.map(r => r.id === assignUnitId ? { ...r, user_id: null, owner: null } : r));
+            setAssignOpen(false);
+          }}>Unassign</button>
+          <div className="flex gap-2">
+            <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => setAssignOpen(false)}>Cancel</button>
+            <button className="px-3 py-1.5 rounded-md border border-border" onClick={async () => {
+              if (!assignUnitId || !assignUserId) return;
+              await supabase.from('units').update({ user_id: assignUserId }).eq('id', assignUnitId);
+              const u = clients.find(c => c.id === assignUserId);
+              setRows(rs => rs.map(r => r.id === assignUnitId ? { ...r, user_id: assignUserId, owner: u?.email || u?.name || assignUserId } : r));
+              setAssignOpen(false);
+            }}>Save</button>
+          </div>
         </div>
       </Modal>
     </Shell>
