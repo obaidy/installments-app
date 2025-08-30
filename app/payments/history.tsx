@@ -32,7 +32,7 @@ export default function PaymentHistoryScreen() {
       .from('units')
       .select('id, complex_id, client_complex_status!inner(status)')
       .eq('user_id', user.id)
-      .eq('client_complex_status.status', 'approved');
+      ;
 
     const unitIds = units?.map((u) => u.id) || [];
     if (unitIds.length === 0) return;
@@ -100,3 +100,4 @@ const styles = StyleSheet.create({
   item: { padding: 12, backgroundColor: '#fff', borderRadius: 4 },
   separator: { height: 10 },
 });
+

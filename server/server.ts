@@ -13,11 +13,20 @@ import reconcileRouter from './routes/reconcile';
 import paymentMethodsRouter from './routes/paymentMethods';
 
 export const app = express();
-// CORS (allow dev origins and handle preflight)
+// CORS (allow dev; restrict in prod via ALLOWED_ORIGINS comma list)
+const allowed = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 const corsOptions: cors.CorsOptions = {
-  origin: true, // reflect request origin
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // mobile/node
+    if (!allowed.length || allowed.includes(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
+  allowedHeaders: ['Content-Type','Authorization','authorization','X-Idempotency-Key','Origin','X-Requested-With','Accept'],
+  credentials: true,
 };
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
@@ -148,5 +157,6 @@ export function startServer() {
 }
 
 export default app;
+
 
 

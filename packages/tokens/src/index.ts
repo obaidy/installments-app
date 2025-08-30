@@ -6,7 +6,7 @@ export const palette = {
     background: '#F6F9FC',
     surface: '#FFFFFF',
     text: '#0A2540',
-    primary: '#635BFF',
+    primary: '#A5B4FC',
     secondary: '#00D4FF',
     accent: '#7A5AF8',
     icon: '#6B7280',
@@ -16,7 +16,7 @@ export const palette = {
     background: '#0A2540',
     surface: '#111827',
     text: '#F8FAFC',
-    primary: '#635BFF',
+    primary: '#A5B4FC',
     secondary: '#00D4FF',
     accent: '#22D3EE',
     icon: '#9CA3AF',
@@ -118,4 +118,5 @@ export const rnDesignTokens = {
 
 export type Palette = typeof palette;
 export type Spacing = typeof spacing;
+
 

@@ -138,7 +138,7 @@ function InviteButton({ onInvited }: { onInvited: () => void }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const r = await fetch(`${api}/auth/invite`, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ email, role }) });
+      const r = await fetch(`/api/admin/users/invite`, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ email, role }) });
       if (r.ok) { setOpen(false); onInvited(); return; }
       const d = await r.json().catch(() => ({}));
       setError(formatApiError(locale, d?.error || null));
@@ -172,3 +172,4 @@ function InviteButton({ onInvited }: { onInvited: () => void }) {
     </>
   );
 }
+

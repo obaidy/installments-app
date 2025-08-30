@@ -13,7 +13,7 @@
                     "android":  "expo start --android",
                     "schedule-charges":  "ts-node scripts/schedule-charges.ts",
                     "dunning:run":  "ts-node scripts/dunning-worker.ts",
-                    "start-server":  "node --loader ts-node/esm --experimental-specifier-resolution=node server/index.ts",
+                    "start-server":  "tsx server/index.ts",
                     "ios":  "expo start --ios",
                     "web":  "expo start --web",
                     "lint":  "expo lint",
@@ -98,6 +98,7 @@
                             "react-test-renderer":  "19.0.0",
                             "supertest":  "^7.1.4",
                             "ts-node":  "^10.9.1",
+                            "tsx":  "^4.20.5",
                             "typescript":  "~5.8.3"
                         },
     "private":  true

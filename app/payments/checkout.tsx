@@ -27,9 +27,11 @@ export default function CheckoutScreen() {
   const [paying, setPaying] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
+  const didRef = useRef(false);
   useEffect(() => {
     async function fetchDue() {
       if (!id || !type) return;
+      if (didRef.current) return; didRef.current = true;
       setLoading(true);
       toast.show('Loading due item...');
       const table = type === 'service_fee' ? 'service_fees' : 'installments';
@@ -138,5 +140,8 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: Layout.screenPadding, gap: 12 },
 });
+
+
+
 
 

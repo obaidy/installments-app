@@ -13,6 +13,8 @@ Environment Variables
 - QI_PRIVATE_KEY: RSA private key (single-line with \n escapes) for signing.
 - QI_PRIVATE_KEY_PATH: Path to a PEM file with the RSA private key.
 
+- ALLOWED_ORIGINS: Comma-separated list of allowed origins for CORS in production (e.g., https://admin.example.com,https://app.example.com).
+
 Notes
 
 - Provide either QI_PRIVATE_KEY or QI_PRIVATE_KEY_PATH when USE_QI=1.
