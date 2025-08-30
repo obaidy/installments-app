@@ -21,6 +21,10 @@ export default function ProfileScreen() {
         <Button title="کوردی" onPress={() => setAppLanguage('ku')} />
       </View>
       <Button
+        title="Payment Methods"
+        onPress={() => router.push('/(tabs)/payment-methods')}
+      />
+      <Button
         title="Join Complex"
         onPress={() => router.push('/complexes/add')}
       />
@@ -37,3 +41,4 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
+

@@ -8,6 +8,7 @@ import { useColorScheme } from '../hooks/useColorScheme';
 import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
 import { QueryProvider } from './_providers/QueryProvider';
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -28,16 +29,18 @@ export default function RootLayout() {
   return (
     <QueryProvider>
       <ToastProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack initialRouteName="index">
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            {/* Group routes don't need explicit Stack.Screen entries */}
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
+        <StripeProvider publishableKey={String(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')}>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack initialRouteName="index">
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              {/* Group routes don't need explicit Stack.Screen entries */}
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </StripeProvider>
       </ToastProvider>
     </QueryProvider>
   );

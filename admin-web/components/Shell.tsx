@@ -6,21 +6,9 @@ import { cn } from '@/components/ui/utils'
 import { usePathname } from 'next/navigation'
 import { t } from '@/lib/i18n'
 import { supabase } from '@/lib/supabaseClient'
-import { DashboardIcon, ApprovalsIcon, ComplexesIcon, UnitsIcon, InstallmentsIcon, ServiceFeesIcon, PaymentsIcon, ReconciliationIcon, UsersIcon } from '@/components/icons'
+import { DashboardIcon, ApprovalsIcon, ComplexesIcon, UnitsIcon, InstallmentsIcon, ServiceFeesIcon, PaymentsIcon, ReconciliationIcon, UsersIcon, MenuIcon, CloseIcon } from '@/components/icons'
 
-const nav = [
-  { href: '/', key: 'dashboard' as const, icon: '📊' },
-  { href: '/approvals', key: 'approvals' as const, icon: '✅' },
-  { href: '/complexes', key: 'complexes' as const, icon: '🏢' },
-  { href: '/units', key: 'units' as const, icon: '🏠' },
-  { href: '/installments', key: 'installments' as const, icon: '🧾' },
-  { href: '/service-fees', key: 'serviceFees' as const, icon: '🛠️' },
-  { href: '/payments', key: 'payments' as const, icon: '💸' },
-  { href: '/reconciliation', key: 'reconciliation' as const, icon: '📒' },
-  { href: '/users', key: 'users' as const, icon: '👤' },
-]
-
-// Icon-based nav variant used for rendering
+// Icon-based nav used for rendering
 const NAV = [
   { href: '/', key: 'dashboard' as const, icon: DashboardIcon },
   { href: '/approvals', key: 'approvals' as const, icon: ApprovalsIcon },
@@ -72,8 +60,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <section className="bg-background min-h-dvh">
         <header className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between bg-card/60 backdrop-blur sticky top-0 z-20">
           <div className="flex items-center gap-2">
-            <button className="md:hidden inline-flex items-center justify-center rounded-md px-2 py-1 bg-[#0A2540] text-white" onClick={() => setOpen(true)}>
-              ☰
+            <button className="md:hidden inline-flex items-center justify-center rounded-md px-2 py-1 bg-[#0A2540] text-white" onClick={() => setOpen(true)} aria-label="Open menu">
+              <MenuIcon size={18} />
             </button>
             <div className="text-lg font-semibold">{t(locale,'adminTitle')}</div>
           </div>
@@ -102,7 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div className="absolute top-0 bottom-0 right-0 w-72 bg-[#0A2540] text-white p-4 space-y-2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div className="text-lg font-semibold">Admin</div>
-              <button onClick={() => setOpen(false)}>✕</button>
+              <button onClick={() => setOpen(false)} aria-label="Close menu"><CloseIcon size={18} /></button>
             </div>
             <nav className="space-y-2">
               {NAV.map((n) => {
@@ -147,7 +135,4 @@ export function Shell({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-
-
-
 

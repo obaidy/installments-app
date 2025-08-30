@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthorization from '../../hooks/useAuthorization';
 import { ThemedText } from '../../components/ThemedText';
+import { SkeletonList } from '../../components/Skeleton';
 
 type Unit = { id: number; name: string; complex_id: number };
 
@@ -56,7 +57,7 @@ export default function UnitsScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ThemedText>Loading...</ThemedText>
+        <SkeletonList rows={6} />
       </View>
     );
   }

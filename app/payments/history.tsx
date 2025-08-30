@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '../../components/ThemedText';
+import { SkeletonList } from '../../components/Skeleton';
 
 type Payment = {
   id: number;
@@ -14,12 +15,14 @@ type Payment = {
 
 export default function PaymentHistoryScreen() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPayments();
   }, []);
 
   async function fetchPayments() {
+    setLoading(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -54,6 +57,7 @@ export default function PaymentHistoryScreen() {
       setPayments(mapped);
 
     }
+    setLoading(false);
   }
 
   function renderItem({ item }: { item: Payment }) {
@@ -78,12 +82,15 @@ export default function PaymentHistoryScreen() {
   return (
     <View style={styles.container}>
       <ThemedText type="title">Payment History</ThemedText>
+      {loading ? <SkeletonList rows={6} /> : payments.length === 0 ? (
+        <ThemedText>No payments yet.</ThemedText>
+      ) : (
       <FlatList
         data={payments}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+      />)}
     </View>
   );
 }

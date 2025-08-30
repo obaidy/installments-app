@@ -9,7 +9,7 @@ import { ExportButton } from '@/components/ExportButton';
 import { useTheme } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-type UnitRow = { id: number; name: string; complex?: string; complex_id?: number; user_id?: string | null; owner?: string | null };
+type UnitRow = { id: number; name: string; complex?: string; complex_id?: number; user_id?: string | null; owner?: string | null; autopay?: boolean };
 type Complex = { id: number; name: string };
 type Client = { id: string; email?: string | null; name?: string | null };
 
@@ -32,6 +32,9 @@ export default function UnitsPage() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignUnitId, setAssignUnitId] = useState<number | null>(null);
   const [assignUserId, setAssignUserId] = useState<string>('');
+  const [cardsOpen, setCardsOpen] = useState(false);
+  const [cards, setCards] = useState<any[]>([]);
+  const [cardsUnitId, setCardsUnitId] = useState<number | null>(null);
 
   useEffect(() => { fetchAll(page); }, [page]);
 
@@ -39,11 +42,11 @@ export default function UnitsPage() {
     setLoading(true);
     const from = p * pageSize; const to = from + pageSize - 1;
     const [{ data: units }, { data: compl }, { data: clientRows }] = await Promise.all([
-      supabase.from('units').select('id, name, complex_id, user_id, complexes(name), profiles(email)').order('name').range(from, to),
+      supabase.from('units').select('id, name, complex_id, user_id, autopay_enabled, complexes(name), profiles(email)').order('name').range(from, to),
       supabase.from('complexes').select('id, name').order('name'),
       supabase.from('user_roles').select('user_id, role, profiles(email, full_name)').eq('role','client').order('profiles(email)')
     ]);
-    setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: u.complexes?.name as string | undefined, user_id: (u.user_id as string|undefined)|| null, owner: (u.profiles?.email as string|undefined)|| null })));
+    setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: u.complexes?.name as string | undefined, user_id: (u.user_id as string|undefined)|| null, owner: (u.profiles?.email as string|undefined)|| null, autopay: !!u.autopay_enabled })));
     setComplexes((compl as any[]) as Complex[] || []);
     setClients(((clientRows as any[]) || []).map(r => ({ id: r.user_id as string, email: r.profiles?.email as string | undefined, name: r.profiles?.full_name as string | undefined })) as Client[]);
     setHasMore((((units as any[]) || []).length) === pageSize);
@@ -61,6 +64,15 @@ export default function UnitsPage() {
     { key: 'name', label: t(locale,'name') },
     { key: 'complex', label: t(locale,'complex') },
     { key: 'owner', label: t(locale,'owner'), render: (r) => r.owner || '-' },
+    { key: 'autopay', label: 'Autopay', width: '140px', render: (r) => (
+      <label className="inline-flex items-center gap-2">
+        <input type="checkbox" checked={!!r.autopay} onChange={async (e) => {
+          await supabase.from('units').update({ autopay_enabled: e.currentTarget.checked }).eq('id', r.id);
+          setRows(rs => rs.map(x => x.id === r.id ? { ...x, autopay: e.currentTarget.checked } : x));
+        }} />
+        <span className="text-xs opacity-70">{r.autopay ? 'On' : 'Off'}</span>
+      </label>
+    ) },
     {
       key: 'id',
       label: t(locale,'actions'),
@@ -69,6 +81,26 @@ export default function UnitsPage() {
         <div className="flex gap-2">
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setEditingId(r.id); setName(r.name); setComplexId(r.complex_id || ''); setOpen(true); }}>{t(locale,'edit')}</button>
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => { setAssignUnitId(r.id); setAssignUserId(r.user_id || ''); setAssignOpen(true); }}>{r.user_id ? t(locale,'changeOwner') : t(locale,'assignOwner')}</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={async () => {
+            try {
+              const api = process.env.NEXT_PUBLIC_API_URL as string;
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+              const r2 = await fetch(`${api}/payments/charge-now`, { method: 'POST', headers: { 'content-type':'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ unit_id: r.id }) });
+              if (r2.ok) alert('Charge created'); else alert('Charge failed');
+            } catch { alert('Network error'); }
+          }}>Charge</button>
+          <button className="px-3 py-1.5 rounded-md border border-border" onClick={async () => {
+            setCardsOpen(true); setCardsUnitId(r.id); setCards([]);
+            try {
+              const api = process.env.NEXT_PUBLIC_API_URL as string;
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+              const resp = await fetch(`${api}/payments/pm/list?unit_id=${r.id}`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+              const d = await resp.json();
+              setCards((d?.paymentMethods || []) as any[]);
+            } catch {}
+          }}>Cards</button>
           <button className="px-3 py-1.5 rounded-md border border-border" onClick={() => removeUnit(r.id)}>{t(locale,'delete')}</button>
         </div>
       )
@@ -196,6 +228,19 @@ export default function UnitsPage() {
               setAssignOpen(false);
             }}>{t(locale,'save')}</button>
           </div>
+        </div>
+      </Modal>
+      <Modal open={cardsOpen} onClose={() => setCardsOpen(false)} title={`Cards for Unit ${cardsUnitId ?? ''}`}>
+        <div className="grid gap-2">
+          {cards.length === 0 ? <div className="text-sm opacity-70">No cards</div> : (
+            <ul className="space-y-2">
+              {cards.map((pm: any) => (
+                <li key={pm.id} className="text-sm">
+                  {(pm.card?.brand || '') + ' •••• ' + (pm.card?.last4 || '') + '  ' + pm.card?.exp_month + '/' + pm.card?.exp_year}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </Modal>
     </Shell>

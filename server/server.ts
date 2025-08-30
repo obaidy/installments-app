@@ -10,9 +10,17 @@ import { supabaseService } from '../lib/supabaseServiceClient';
 import paymentsRouter from './routes/payments';
 import authRouter from './routes/auth';
 import reconcileRouter from './routes/reconcile';
+import paymentMethodsRouter from './routes/paymentMethods';
 
 export const app = express();
-app.use(cors());
+// CORS (allow dev origins and handle preflight)
+const corsOptions: cors.CorsOptions = {
+  origin: true, // reflect request origin
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 function mapStripeStatus(
   status: string,
@@ -127,6 +135,7 @@ app.use(express.json());
 app.use('/payments', paymentsRouter);
 app.use('/auth', authRouter);
 app.use('/reconcile', reconcileRouter);
+app.use('/payments', paymentMethodsRouter);
 
 // Simple health check
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
@@ -139,3 +148,5 @@ export function startServer() {
 }
 
 export default app;
+
+

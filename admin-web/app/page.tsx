@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { KpiCard } from '../components/KpiCard'
 import { Sparkline } from '../components/Sparkline'
-import { MoneyTable } from '../components/MoneyTable'
+import { MoneyTable } from '../components/MoneyTableFixed'
 import { Shell } from '../components/Shell'
 import { supabase } from '../lib/supabaseClient';
 import type { Status } from '@/lib/format';
@@ -14,6 +14,7 @@ type Row = { id: string; unit: string; dueDate: string; amount: number; status: 
 
 export default function Page() {
   const [filter, setFilter] = useState<'all'|'due'|'overdue'|'paid'>('all');
+  const [autopayOnly, setAutopayOnly] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [kpis, setKpis] = useState({ dueToday: 0, next30: 0, pastDue: 0, collectedMtd: 0 });
   const [recent, setRecent] = useState<{ title: string; when: string }[]>([]);
@@ -31,7 +32,7 @@ export default function Page() {
       // Fetch money table rows (latest 50 by due date)
       const { data: inst } = await supabase
         .from('installments')
-        .select('id, amount_iqd, due_date, paid, units(name)')
+        .select('id, amount_iqd, due_date, paid, units(name, autopay_enabled)')
         .order('due_date', { ascending: true })
         .limit(50);
 
@@ -45,6 +46,7 @@ export default function Page() {
           dueDate,
           amount: r.amount_iqd as number,
           status,
+          autopay: !!r.units?.autopay_enabled,
         };
       });
       setRows(mapped);
@@ -97,8 +99,10 @@ export default function Page() {
 
   const filteredRows = useMemo(() => {
     if (filter === 'all') return rows;
-    return rows.filter(r => r.status === filter);
-  }, [rows, filter]);
+    let arr = rows.filter(r => r.status === filter);
+    if (autopayOnly) arr = arr.filter((r: any) => !!(r as any).autopay);
+    return arr;
+  }, [rows, filter, autopayOnly]);
 
   return (
     <Shell>
@@ -127,6 +131,9 @@ export default function Page() {
           <Button variant={filter==='due'?undefined:'ghost'} onClick={()=>setFilter('due')}>Due</Button>
           <Button variant={filter==='overdue'?undefined:'ghost'} onClick={()=>setFilter('overdue')}>Past Due</Button>
           <Button variant={filter==='paid'?undefined:'ghost'} onClick={()=>setFilter('paid')}>Paid</Button>
+          <label className="ml-4 inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={autopayOnly} onChange={(e) => setAutopayOnly(e.currentTarget.checked)} /> Autopay only
+          </label>
         </div>
         <MoneyTable rows={filteredRows} />
         <Card>
@@ -161,3 +168,4 @@ export default function Page() {
     </Shell>
   )
 }
+

@@ -13,6 +13,31 @@ GET /payments/status/:ref
 
 - Response: { status: 'pending' | 'paid' | 'failed' | 'cancelled' }
 
+Payment Methods (Stripe)
+
+Auth: Include `Authorization: Bearer <supabase access token>` for these endpoints.
+
+POST /payments/pm/setup-intent
+
+- Body: { unit_id: number }
+- Response: { ok: true, clientSecret: string }
+
+POST /payments/pm/set-default
+
+- Body: { unit_id: number; paymentMethodId: string }
+- Response: { ok: true }
+
+GET /payments/pm/list?unit_id=123
+
+- Response: { ok: true, paymentMethods: Array<{ id: string; card?: { brand: string; last4: string; exp_month: number; exp_year: number } }> }
+
+Autopay
+
+POST /payments/autopay/set
+
+- Body: { unit_id: number; enabled: boolean }
+- Response: { ok: true }
+
 POST /payments/webhook
 
 - Stripe webhook endpoint. Uses raw body for signature verification.

@@ -2,11 +2,12 @@ import Stripe from "stripe";
 
 
 export type PaymentIntentPayload = {
-amountIQD: number;
-description?: string;
-metadata?: Record<string, string>;
-customerId?: string;
-returnUrl?: string;
+  amountIQD: number;
+  description?: string;
+  metadata?: Record<string, string>;
+  customerId?: string;
+  returnUrl?: string;
+  idempotencyKey?: string;
 };
 
 
@@ -26,12 +27,12 @@ async createIntent(p) {
 // For testing we use USD cents; when moving to IQD in Stripe (if supported), adjust mapping
 const cents = Math.round((p.amountIQD || 0) * 100);
 const pi = await stripe.paymentIntents.create({
-amount: cents,
-currency: "usd",
-description: p.description,
-metadata: p.metadata,
-automatic_payment_methods: { enabled: true },
-});
+  amount: cents,
+  currency: "usd",
+  description: p.description,
+  metadata: p.metadata,
+  automatic_payment_methods: { enabled: true },
+}, p.idempotencyKey ? { idempotencyKey: p.idempotencyKey } : undefined as any);
 return { ok: true as const, referenceId: pi.id };
 },
 

@@ -6,6 +6,7 @@ import { DataTable, type Column } from '@/components/DataTable';
 import { supabase } from '@/lib/supabaseClient';
 import { ExportButton } from '@/components/ExportButton';
 import { useTheme } from '@/lib/theme';
+import { formatApiError } from '@/lib/apiError';
 import { t } from '@/lib/i18n';
 
 type Role = 'admin' | 'manager' | 'client';
@@ -129,10 +130,21 @@ function InviteButton({ onInvited }: { onInvited: () => void }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('client');
+  const [error, setError] = useState<string>('');
+  const { locale } = useTheme();
   async function invite() {
-    const api = process.env.NEXT_PUBLIC_API_URL;
-    const r = await fetch(`${api}/auth/invite`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, role }) });
-    if (r.ok) { setOpen(false); onInvited(); }
+    setError('');
+    const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const r = await fetch(`${api}/auth/invite`, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ email, role }) });
+      if (r.ok) { setOpen(false); onInvited(); return; }
+      const d = await r.json().catch(() => ({}));
+      setError(formatApiError(locale, d?.error || null));
+    } catch (e: any) {
+      setError('Network error');
+    }
   }
   return (
     <>
@@ -142,6 +154,7 @@ function InviteButton({ onInvited }: { onInvited: () => void }) {
           <div className="absolute right-4 top-16 bg-card border border-border rounded-md p-4 w-[320px]" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold mb-2">Invite user</div>
             <div className="grid gap-2">
+              {error ? <div className="text-sm text-red-600">{error}</div> : null}
               <input className="rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="email@example.com" value={email} onChange={e => setEmail(e.target.value)} />
               <select className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={role} onChange={e => setRole(e.target.value as Role)}>
                 <option value="client">Client</option>

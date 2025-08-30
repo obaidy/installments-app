@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast';
 import { Layout } from '../../constants/Layout';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '../../components/ThemedText';
+import { createCheckout, getPaymentStatus } from '../../lib/api/payments';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -23,6 +24,8 @@ export default function CheckoutScreen() {
 
   const [due, setDue] = useState<Due | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     async function fetchDue() {
@@ -51,28 +54,55 @@ export default function CheckoutScreen() {
       toast.show('No due item to pay');
       return;
     }
-
+    setPaying(true);
     try {
       const metadata: Record<string, string> = { unit_id: String(due.unit_id || '') };
       if (type === 'service_fee') metadata.service_fee_id = String(due.id);
       else metadata.installment_id = String(due.id);
 
-      const response = await fetch(`${API_URL}/payments/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amountIQD: due.amount_iqd,
-          description: type,
-          metadata,
-          target_type: type === 'service_fee' ? 'service_fee' : 'installment',
-          target_id: due.id,
-        }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Payment failed');
-      toast.show('Payment successful: ' + result.status);
+      const result = await createCheckout(
+        due.amount_iqd,
+        type,
+        metadata,
+        { type: (type === 'service_fee' ? 'service_fee' : 'installment'), id: Number(due.id) }
+      );
+
+      if (result.redirectUrl) {
+        toast.show('Opening payment…');
+        // WebBrowser opens in createCheckout for Qi; nothing else to do now
+        return;
+      }
+
+      const ref = result.referenceId;
+      if (ref) {
+        toast.show('Processing payment…');
+        // Poll status briefly for Stripe intents
+        let attempts = 0;
+        const poll = async () => {
+          attempts++;
+          try {
+            const status = await getPaymentStatus(ref);
+            if (status === 'paid') {
+              toast.show('Payment successful');
+              setDue((d) => (d ? { ...d, paid: true } : d));
+              if (pollRef.current) clearInterval(pollRef.current);
+            } else if (attempts >= 15) {
+              if (pollRef.current) clearInterval(pollRef.current);
+              toast.show('Payment created. Check status later.');
+            }
+          } catch (e: any) {
+            if (pollRef.current) clearInterval(pollRef.current);
+            toast.show(e?.message || 'Error checking status');
+          }
+        };
+        pollRef.current = setInterval(poll, 2000);
+      } else {
+        toast.show('Checkout created');
+      }
     } catch (err: any) {
-      toast.show(err.message);
+      toast.show((await import('../../lib/apiError')).formatApiError((err as any)?.error || err?.message));
+    } finally {
+      setPaying(false);
     }
   }
 
@@ -100,7 +130,7 @@ export default function CheckoutScreen() {
         Due: {due.due_date ? new Date(due.due_date).toLocaleDateString() : ''}
       </ThemedText>
       <ThemedText>Paid: {due.paid ? 'Yes' : 'No'}</ThemedText>
-      <PrimaryButton title="Pay Now" onPress={handlePayment} />
+      <PrimaryButton title={paying ? 'Processing…' : 'Pay Now'} onPress={handlePayment} disabled={paying} />
     </View>
   );
 }
@@ -108,3 +138,5 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: Layout.screenPadding, gap: 12 },
 });
+
+

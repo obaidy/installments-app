@@ -12,7 +12,7 @@ export async function main() {
   const now = new Date().toISOString();
   const { data: installments, error } = await supabase
     .from('installments')
-    .select('id, unit_id, amount_iqd, units(customer_id)')
+    .select('id, unit_id, amount_iqd, units(customer_id, autopay_enabled)')
     .eq('paid', false)
     .lte('due_date', now);
 
@@ -23,7 +23,8 @@ export async function main() {
 
   for (const inst of installments as any[]) {
     const customerId = inst.units?.customer_id;
-    if (!customerId) continue;
+    const autopay = !!inst.units?.autopay_enabled;
+    if (!customerId || !autopay) continue;
     const amount = inst.amount_iqd as number;
     try {
       const intent = await chargeCustomer(

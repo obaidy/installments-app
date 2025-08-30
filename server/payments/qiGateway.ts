@@ -8,6 +8,7 @@ description?: string;
 metadata?: Record<string, string>;
 customerId?: string;
 returnUrl?: string;
+ idempotencyKey?: string;
 };
 
 

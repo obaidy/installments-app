@@ -12,8 +12,8 @@ async function main() {
   const now = new Date();
   // Overdue items (installments + service_fees), excluding open promises
   const [inst, fees, promises] = await Promise.all([
-    supabaseService.from('installments').select('id, unit_id, amount_iqd, due_date, paid').eq('paid', false).lte('due_date', now.toISOString()).limit(5000),
-    supabaseService.from('service_fees').select('id, unit_id, amount_iqd, due_date, paid').eq('paid', false).lte('due_date', now.toISOString()).limit(5000),
+    supabaseService.from('installments').select('id, unit_id, amount_iqd, due_date, paid, units(autopay_enabled)').eq('paid', false).lte('due_date', now.toISOString()).limit(5000),
+    supabaseService.from('service_fees').select('id, unit_id, amount_iqd, due_date, paid, units(autopay_enabled)').eq('paid', false).lte('due_date', now.toISOString()).limit(5000),
     supabaseService.from('promises').select('target_type, target_id, promise_date, status').eq('status','open'),
   ]);
 
@@ -23,8 +23,8 @@ async function main() {
   });
 
   const overdue: Array<{ kind: 'installment'|'service_fee'; id: number; unit_id: number; due: Date }>= [];
-  (inst.data || []).forEach((i: any) => overdue.push({ kind: 'installment', id: i.id, unit_id: i.unit_id, due: new Date(i.due_date) }));
-  (fees.data || []).forEach((i: any) => overdue.push({ kind: 'service_fee', id: i.id, unit_id: i.unit_id, due: new Date(i.due_date) }));
+  (inst.data || []).forEach((i: any) => { if (!i.units?.autopay_enabled) overdue.push({ kind: 'installment', id: i.id, unit_id: i.unit_id, due: new Date(i.due_date) }); });
+  (fees.data || []).forEach((i: any) => { if (!i.units?.autopay_enabled) overdue.push({ kind: 'service_fee', id: i.id, unit_id: i.unit_id, due: new Date(i.due_date) }); });
 
   let remindersQueued = 0;
   let lateFeesCreated = 0;
