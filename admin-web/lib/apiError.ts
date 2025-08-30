@@ -18,3 +18,4 @@ export function formatApiError(locale: 'ar'|'en'|'ku', err: ErrorObj): string {
   return map[code] || err.message || 'Error';
 }
 
+

@@ -19,3 +19,6 @@ Notes
 
 - Provide either QI_PRIVATE_KEY or QI_PRIVATE_KEY_PATH when USE_QI=1.
 - Do not expose STRIPE_SECRET_KEY in the mobile app; it is used only in server and Node scripts.
+
+- ADMIN_INVITES_ENABLED: Set to 0 to temporarily disable admin invites (route returns INVITES_DISABLED).
+- ADMIN_CHECK_MX: Set to 1 to perform a DNS MX lookup for email domains before inviting.

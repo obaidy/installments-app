@@ -9,12 +9,13 @@
   },
   "dependencies": {
     "@installments/config": "file:../packages/config",
-    "@supabase/supabase-js": "^2.50.0",
     "@installments/tokens": "file:../packages/tokens",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.50.0",
+    "classnames": "2.5.1",
     "next": "14.2.10",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "classnames": "2.5.1"
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "autoprefixer": "10.4.20",

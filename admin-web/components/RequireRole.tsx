@@ -26,7 +26,8 @@ export function RequireRole({ allowed, children }: { allowed: string[]; children
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .limit(1)
+        .maybeSingle();
       const role = data?.role as string | undefined;
       if (!role || !allowed.includes(role)) {
         router.replace('/not-authorized');
@@ -39,3 +40,6 @@ export function RequireRole({ allowed, children }: { allowed: string[]; children
   if (checking) return <div style={{ padding: 16 }}>Loading…</div>;
   return <>{children}</>;
 }
+
+
+

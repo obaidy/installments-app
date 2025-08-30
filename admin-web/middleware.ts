@@ -1,24 +1,31 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-export function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
+export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  const isPublic =
+    path.startsWith('/auth') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/favicon.ico') ||
+    path.startsWith('/api/health') ||
+    path.startsWith('/api/whoami'); // keep simple diagnostics reachable
 
-  // Allow public routes
-  if (pathname.startsWith('/auth')) return NextResponse.next();
-  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) return NextResponse.next();
+  const res = NextResponse.next();
 
-  // If we don't have the simple auth cookie, force login
-  const access = req.cookies.get('sb-access-token')?.value;
-  if (!access) {
-    const loginUrl = new URL(`/auth/login?next=${encodeURIComponent(pathname + search)}`, req.url);
-    return NextResponse.redirect(loginUrl);
+  // This both reads AND refreshes Supabase session cookies for all routes (pages + API)
+  const supabase = createMiddlewareClient({ req, res });
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session && !isPublic) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/auth/login';
+    url.searchParams.set('next', path + (req.nextUrl.search || ''));
+    return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  return res; // Important: return the response that carries refreshed cookies
 }
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
-
