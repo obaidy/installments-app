@@ -3,12 +3,15 @@ import { View, FlatList } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { PrimaryButton } from '../../components/form/PrimaryButton';
 import { supabase } from '../../lib/supabaseClient';
+import { useToast } from '../../components/Toast';
 
 type PastDue = { id: number; unit_id: number; due_date: string; amount_iqd: number; unit_name?: string };
 
 export default function DunningScreen() {
   const [items, setItems] = useState<PastDue[]>([]);
   const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [sending, setSending] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     (async () => {
@@ -32,15 +35,26 @@ export default function DunningScreen() {
 
   async function bulkSend() {
     const ids = Object.keys(selected).filter((k) => selected[Number(k)]).map(Number);
-    // TODO: Integrate actual messaging; placeholder log for now
-    console.log('Sending reminders for installments:', ids);
+    
+    setSending(true);
+    try {
+      const { error } = await supabase.functions.invoke('dunning-bulk-send', {
+        body: { installments: ids },
+      });
+      if (error) throw error;
+      toast.show('Reminders sent');
+    } catch (e: any) {
+      toast.show(e?.message || 'Failed to send reminders');
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
     <View style={{ flex: 1, padding: 16, gap: 12 }}>
       <ThemedText type="title">Dunning</ThemedText>
       <ThemedText>Past-due installments. Select and bulk send reminders.</ThemedText>
-      <PrimaryButton title="Bulk Send" onPress={bulkSend} />
+      <PrimaryButton title={sending ? 'Sending…' : 'Bulk Send'} onPress={bulkSend} disabled={sending} />
       <FlatList
         data={items}
         keyExtractor={(i) => String(i.id)}
