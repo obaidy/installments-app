@@ -17,8 +17,19 @@ export default function LoginPage() {
   React.useEffect(() => {
     // If already logged in, bounce to home
     (async () => {
-      const { data: { user } } = await supabaseBrowser.auth.getUser();
-      if (user) router.replace('/');
+      const { data: { user }, error } = await supabaseBrowser.auth.getUser();
+      if (user && !error) {
+        // Ensure middleware cookies exist so SSR stops redirecting back
+        try {
+          const { data: sess } = await supabaseBrowser.auth.getSession();
+          const access = sess.session?.access_token;
+          const refresh = sess.session?.refresh_token;
+          const maxAge = 60 * 60 * 24 * 7;
+          if (access) document.cookie = `sb-access-token=${access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+          if (refresh) document.cookie = `sb-refresh-token=${refresh}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+        } catch {}
+        router.replace('/');
+      }
     })();
   }, [router]);
 
@@ -30,9 +41,6 @@ export default function LoginPage() {
       // 1) Sign in
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
       if (error) throw error;
-
-      // (Optional) ensure default role row exists for older accounts
-      try { await supabaseBrowser.rpc('ensure_client_role'); } catch {}
 
       // 2) Fetch role + approval (RLS must allow self-read)
       const [{ data: statusRow, error: sErr }, { data: roleRow, error: rErr }] = await Promise.all([
@@ -51,7 +59,17 @@ export default function LoginPage() {
         return;
       }
 
-      // 3) Redirect: admins to requested page; others to not-authorized (adjust as you like)
+      // 3) Set middleware cookies so SSR sees session
+      try {
+        const { data: sess } = await supabaseBrowser.auth.getSession();
+        const access = sess.session?.access_token;
+        const refresh = sess.session?.refresh_token;
+        const maxAge = 60 * 60 * 24 * 7;
+        if (access) document.cookie = `sb-access-token=${access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+        if (refresh) document.cookie = `sb-refresh-token=${refresh}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+      } catch {}
+
+      // 4) Redirect: admins to requested page; others to not-authorized (adjust as you like)
       if (role === 'admin') router.replace(next);
       else router.replace('/not-authorized');
     } catch (e: any) {

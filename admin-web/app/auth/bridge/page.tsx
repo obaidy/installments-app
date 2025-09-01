@@ -28,12 +28,12 @@ export default function Bridge() {
         const { data: userRes } = await supabase.auth.getUser();
         const userId = userRes.user?.id;
         if (userId) {
-          const { data } = await supabase
-            .from('user_roles')
-            .select('role')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .limit(1)
+          .maybeSingle();
           const role = data?.role as string | undefined;
           if (role === 'admin') {
             router.replace('/');
@@ -49,6 +49,5 @@ export default function Bridge() {
 
   return <p style={{ padding: 16 }}>Signing you in…</p>;
 }
-
 
 
