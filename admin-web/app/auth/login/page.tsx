@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabaseBrowser';
+import { supabaseBrowser } from '../../../lib/supabaseBrowser';
 
 export default function LoginPage() {
   const router = useRouter();

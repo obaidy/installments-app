@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Request } from 'express';
 
 export interface TypedRequest<
