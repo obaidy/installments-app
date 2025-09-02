@@ -1,78 +1,52 @@
-import { ZodSchema } from 'zod';
-import { Response, NextFunction } from 'express';
-import { TypedRequest } from '../types';
+import type { Request, Response, NextFunction } from 'express';
+import type { ZodSchema } from 'zod';
 
+/**
+ * Generic request typings so we don't rely on a custom TypedRequest type.
+ * Express Request<Params, ResBody, ReqBody, Query>
+ */
+type AnyReq<B = any, P = Record<string, string> = Record<string, string>, Q = any> =
+  Request<P, any, B, Q>;
+
+function sendValidation(res: Response, parsed: any) {
+  const flat = parsed.error.flatten();
+  return res.status(400).json({
+    ok: false,
+    error: {
+      code: 'VALIDATION_ERROR',
+      fields: flat.fieldErrors,
+      form: flat.formErrors,
+    },
+  });
+}
+
+/** Validate req.body against a Zod schema */
 export function validateBody<T>(schema: ZodSchema<T>) {
-  return (
-    req: TypedRequest<T>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return (req: AnyReq<T>, res: Response, next: NextFunction) => {
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            fields: flat.fieldErrors,
-            form: flat.formErrors,
-          },
-        });
-    }
+    if (!parsed.success) return sendValidation(res, parsed);
     // attach typed data for downstream handlers
-     req.body = parsed.data;
+    (req as any).body = parsed.data;
     next();
   };
 }
 
-export function validateParams<T>(schema: ZodSchema<T>) {return (
-    req: TypedRequest<any, T>,
-    res: Response,
-    next: NextFunction,
-  ) => {return (req: Request, res: Response, next: NextFunction) => {
+/** Validate req.params against a Zod schema */
+export function validateParams<T>(schema: ZodSchema<T>) {
+  return (req: AnyReq<any>, res: Response, next: NextFunction) => {
     const parsed = schema.safeParse(req.params);
-    if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            fields: flat.fieldErrors,
-            form: flat.formErrors,
-          },
-        });
-    }
-    req.params = parsed.data as typeof req.params;
+    if (!parsed.success) return sendValidation(res, parsed);
+    (req as any).params = parsed.data as Record<string, string>;
     next();
   };
 }
 
+/** Validate req.query against a Zod schema */
 export function validateQuery<T>(schema: ZodSchema<T>) {
-  return (
-    req: TypedRequest<any, any, T>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return (req: AnyReq<any, any, T>, res: Response, next: NextFunction) => {
     const parsed = schema.safeParse(req.query);
-    if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            fields: flat.fieldErrors,
-            form: flat.formErrors,
-          },
-        });
-    }
-    req.query = parsed.data as typeof req.query;
+    if (!parsed.success) return sendValidation(res, parsed);
+    (req as any).query = parsed.data as T;
     next();
   };
 }
