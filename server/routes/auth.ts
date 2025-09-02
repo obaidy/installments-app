@@ -1,40 +1,41 @@
-import express from 'express';
-import { z } from 'zod';
-import { validateBody } from '../utils/validate';
-import { supabaseService } from '../../lib/supabaseServiceClient';
-import { AuthedRequest, requireAuth, requireRole } from '../middleware/auth';
-const router = express.Router();
+import { Router } from 'express';
+import { optionalUser, requireUser, requireAdmin, type AuthenticatedRequest } from '../middleware/auth';
+import { supabase } from '../../lib/supabaseServiceClient';
 
-const inviteSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(['admin','manager','accountant','client']).optional(),
+const router = Router();
+
+/**
+ * GET /auth/me
+ * Returns current user (if any) plus role & approval status.
+ * Send Authorization: Bearer <access_token> or sb-access-token cookie.
+ */
+router.get('/me', optionalUser, async (req: AuthenticatedRequest, res) => {
+  const u = req.user;
+  if (!u) return res.json({ user: null });
+
+  const [{ data: roleRow, error: rErr }, { data: statusRow, error: sErr }] = await Promise.all([
+    supabase.from('user_roles').select('role').eq('user_id', u.id).maybeSingle(),
+    supabase.from('user_status').select('status').eq('user_id', u.id).maybeSingle(),
+  ]);
+  if (rErr || sErr) {
+    return res.status(500).json({ error: rErr?.message || sErr?.message || 'lookup failed' });
+  }
+
+  return res.json({
+    user: { id: u.id, email: u.email },
+    role: roleRow?.role ?? null,
+    status: statusRow?.status ?? null,
+  });
 });
 
-// POST /auth/invite { email, role }
-router.post(
-  '/invite',
-  requireAuth(),
-  requireRole(['admin']),
-  validateBody(inviteSchema),
-  async (
-    req: AuthedRequest<z.infer<typeof inviteSchema>>,
-    res,
-  ) => {
-  try {
-    const { email, role } = req.body;
-    const inv = await (supabaseService as any).auth.admin.inviteUserByEmail(email);
-    const user = inv.data?.user;
-    if (!user) return res.status(500).json({ ok: false, error: { code: 'INVITE_FAILED' } });
-    // status pending and optional role
-    await supabaseService.from('user_status').upsert({ user_id: user.id, status: 'pending' });
-    if (role) await supabaseService.from('user_roles').upsert({ user_id: user.id, role });
-    await supabaseService.from('profiles').upsert({ user_id: user.id, email });
-    return res.json({ ok: true, user_id: user.id });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: { code: 'INTERNAL', message: e?.message || 'server error' } });
-  }
-},
-);
+/** Requires any logged-in user */
+router.get('/ping', requireUser, (_req, res) => {
+  res.json({ ok: true, auth: 'user' });
+});
+
+/** Requires admin role */
+router.get('/admin/ping', requireAdmin, (_req, res) => {
+  res.json({ ok: true, auth: 'admin' });
+});
 
 export default router;
-
