@@ -1,46 +1,42 @@
-// Loads the root .env *before* reading process.env
-import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import * as path from 'node:path';
+import * as dotenv from 'dotenv';
+
+// Always load the repo root .env, and override any empty shell vars.
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env'),
+  override: true,
+});
 
 /**
- * Resolve env safely. Server should use SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
- * We include NEXT_PUBLIC_/EXPO_PUBLIC_ fallbacks only to help local setups,
- * but do not rely on them in production.
+ * Server-only Supabase service client.
+ * Do NOT import this from browser or Expo code.
  */
-function pickEnv(...keys: string[]) {
-  for (const k of keys) {
-    const v = process.env[k];
-    if (v && v.trim().length > 0) return v.trim();
-  }
-  return '';
-}
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ??
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  process.env.EXPO_PUBLIC_SUPABASE_URL ??
+  '';
 
-const supabaseUrl = pickEnv('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL');
-const serviceKey =
-  pickEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'); // allow alternative naming
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  process.env.SUPABASE_SERVICE_KEY ?? // optional alias
+  '';
 
-if (!supabaseUrl) {
-  throw new Error(
-    'SUPABASE_URL is missing. Add it to your root .env (server). ' +
-    'Example: SUPABASE_URL=https://<project-ref>.supabase.co'
-  );
+if (!SUPABASE_URL) {
+  throw new Error('SUPABASE_URL is required (.env at repo root).');
 }
-if (!serviceKey || serviceKey.length < 50) {
+if (!SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
-    'SUPABASE_SERVICE_ROLE_KEY is missing or invalid. ' +
-    'Put the *service_role* key from Supabase Settings → API into your root .env.'
+    'SUPABASE_SERVICE_ROLE_KEY is missing. Paste the *service_role* key from Supabase → Settings → API into your root .env.'
   );
 }
 
-/**
- * Admin/service client (bypasses RLS when your Postgres policies allow).
- * NOTE: Never expose this key to the browser/mobile code.
- */
-export const supabaseService = createClient(supabaseUrl, serviceKey, {
+export const supabaseService = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Optional compatibility export if other files import { supabase } from here
+// Optional alias to match existing imports
 export const supabase = supabaseService;
 
 export default supabaseService;
