@@ -1,71 +1,66 @@
-import express from 'express';
-import multer from 'multer';
-import { parse } from 'csv-parse/sync';
-import { supabaseService } from '../../lib/supabaseServiceClient';
-import { z } from 'zod';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { Router } from 'express';
+import type Stripe from 'stripe';
+import { stripe } from '../../lib/stripeClient';
+import { supabase } from '../../lib/supabaseServiceClient';
+import { requireAdmin } from '../middleware/auth';
 
-const upload = multer({ storage: multer.memoryStorage() });
-const router = express.Router();
+const router = Router();
 
-// CSV expected columns: provider_ref, amount, status, paid_at(optional)
-router.post('/upload', requireAuth(), requireRole(['admin','accountant']), upload.single('file'), async (req, res) => {
+/** POST /reconcile/by-intent  Body: { payment_intent_id: string, installment_id?: number, unit_id?: number } */
+router.post('/by-intent', requireAdmin, async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ ok: false, error: 'file required' });
-    const text = req.file.buffer.toString('utf8');
-    const rows = parse(text, { columns: true, skip_empty_lines: true });
+    const { payment_intent_id, installment_id, unit_id } = req.body ?? {};
+    if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' });
 
-    const rowSchema = z.object({
-      provider_ref: z.string().or(z.number().transform(String)),
-      amount: z.coerce.number(),
-      status: z.string(),
-      paid_at: z.string().datetime().optional().or(z.literal('')).optional(),
-    }).passthrough();
+    const pi: Stripe.PaymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id, {
+      expand: ['charges.data.balance_transaction'],
+    });
 
-    const results: any[] = [];
-    const invalid: any[] = [];
-    for (const r of rows) {
-      const parsed = rowSchema.safeParse(r);
-      if (!parsed.success) {
-        invalid.push({ row: r, error: parsed.error.flatten() });
-        continue;
-      }
-      const row = parsed.data as any;
-      const ref = (row.provider_ref || (r as any).reference || (r as any).id || '').toString();
-      if (!ref) continue;
-      const amt = Number(row.amount || 0);
-      const status = (row.status || '').toLowerCase();
-      const paid_at = row.paid_at || null;
-      const { data: pay } = await supabaseService
-        .from('payments')
-        .select('id, amount, status, provider_ref, paid_at')
-        .eq('provider_ref', ref)
-        .maybeSingle();
-      if (!pay) {
-        results.push({ ref, type: 'missing', csv: { amount: amt, status, paid_at } });
-        continue;
-      }
-      const dbAmt = Number((pay as any).amount || 0);
-      const dbStatus = (pay as any).status;
-      const dbPaidAt = (pay as any).paid_at;
-      const diff = {
-        amountMismatch: dbAmt !== amt,
-        statusMismatch: dbStatus?.toLowerCase() !== status,
-        paidAtMismatch: paid_at && dbPaidAt && new Date(paid_at).toISOString() !== new Date(dbPaidAt).toISOString(),
-      };
-      results.push({ ref, type: 'matched', db: pay, csv: { amount: amt, status, paid_at }, diff });
+    const unitId = Number(unit_id ?? pi.metadata?.unit_id ?? 0) || null;
+    const instId = Number(installment_id ?? pi.metadata?.installment_id ?? 0) || null;
+    const amount = (pi.amount_received || pi.amount || 0) / 100;
+
+    if (!unitId || !instId) {
+      return res.status(400).json({ error: 'unit_id / installment_id missing (metadata or body)' });
     }
-    const summary = {
-      matched: results.filter(r => r.type === 'matched').length,
-      missing: results.filter(r => r.type === 'missing').length,
-      mismatched: results.filter(r => r.type === 'matched' && (r.diff.amountMismatch || r.diff.statusMismatch || r.diff.paidAtMismatch)).length,
-      invalid: invalid.length,
-    };
-    return res.json({ ok: true, summary, results, invalid });
+
+    await supabase.from('payments').upsert({
+      unit_id: unitId,
+      installment_id: instId,
+      amount,
+      status: pi.status as any,
+      paid_at: pi.status === 'succeeded' ? new Date().toISOString() : null,
+    }, { onConflict: 'unit_id,installment_id' } as any);
+
+    if (pi.status === 'succeeded') {
+      await supabase
+        .from('installments')
+        .update({ paid: true, paid_at: new Date().toISOString() })
+        .eq('id', instId);
+    }
+
+    res.json({ ok: true, intent_status: pi.status });
   } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || 'server error' });
+    res.status(500).json({ error: e?.message ?? 'internal error' });
+  }
+});
+
+router.get('/preview/:installmentId', requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.installmentId);
+    if (!id) return res.status(400).json({ error: 'installmentId required' });
+
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('installment_id', id)
+      .order('paid_at', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ data });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'internal error' });
   }
 });
 
 export default router;
-

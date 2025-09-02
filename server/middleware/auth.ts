@@ -1,79 +1,74 @@
-import { Response, NextFunction } from 'express';
-import { supabaseService } from '../../lib/supabaseServiceClient';
-import { TypedRequest } from '../types';
+import type { Request, Response, NextFunction } from 'express';
+import type { User } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
-export type AuthedRequest<
-  TBody = unknown,
-  TParams = Record<string, any>,
-  TQuery = Record<string, any>
-> = TypedRequest<TBody, TParams, TQuery> & { user?: { id: string } };
+/** Admin client for server-side auth checks */
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } }
+);
 
-export function requireAuth() {
-  return async (
-    req: AuthedRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      const auth = req.headers.authorization || '';
-      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-      if (!token) return res.status(401).json({ ok: false, error: { code: 'UNAUTHORIZED' } });
-      const { data, error } = await (supabaseService as any).auth.getUser(token);
-      if (error || !data?.user) return res.status(401).json({ ok: false, error: { code: 'UNAUTHORIZED' } });
-      req.user = { id: data.user.id };
-      next();
-    } catch {
-      return res.status(401).json({ ok: false, error: { code: 'UNAUTHORIZED' } });
-    }
-  };
+export interface AuthenticatedRequest extends Request {
+  user?: User;
 }
 
-export function requireRole(roles: Array<'admin' | 'manager' | 'accountant'>) {
-  return async (req: AuthedRequest, res: Response, next: NextFunction) => {
-     if (!req.user)
-      return res
-        .status(401)
-        .json({ ok: false, error: { code: 'UNAUTHORIZED' } });
-    interface UserRoleRow {
-      role: string | null;
+function getAccessToken(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+  const cookieToken = (req as any).cookies?.['sb-access-token'];
+  return cookieToken ?? null;
+}
+
+/** Optional: attach req.user if a valid token is present */
+export async function optionalUser(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+) {
+  try {
+    const token = getAccessToken(req);
+    if (token) {
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      if (user) req.user = user;
     }
-    const { data } = await supabaseService
-      .from<UserRoleRow>('user_roles')
+  } catch (_) {}
+  next();
+}
+
+/** Require a logged-in Supabase user */
+export async function requireUser(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const token = getAccessToken(req);
+  if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  req.user = user;
+  next();
+}
+
+/** Require role = 'admin' */
+export async function requireAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  await requireUser(req, res, async () => {
+    const { data, error } = await supabaseAdmin
+      .from('user_roles')
       .select('role')
-      .eq('user_id', req.user.id)
-      .single();
-    const role = data?.role ?? undefined;
-    if (!role || !roles.includes(role as any))
-      return res
-        .status(403)
-        .json({ ok: false, error: { code: 'FORBIDDEN' } });
+      .eq('user_id', req.user!.id)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (data?.role !== 'admin') return res.status(403).json({ error: 'FORBIDDEN' });
+
     next();
-  };
+  });
 }
-
-export async function assertUnitAccess(userId: string, unitId: number) {
-  // Owner of unit
-  interface UnitRow {
-    user_id: string | null;
-    complex_id: number | null;
-  }
-  const { data: u } = await supabaseService
-    .from<UnitRow>('units')
-    .select('user_id, complex_id')
-    .eq('id', unitId)
-    .single();
-  const ownerId = u?.user_id;
-  const complexId = u?.complex_id;
-  if (ownerId && ownerId === userId) return true;
-  if (complexId) {
-    const { data: m } = await supabaseService
-      .from<{ manager_id: string }>('manager_complexes')
-      .select('manager_id')
-      .eq('manager_id', userId)
-      .eq('complex_id', complexId)
-      .limit(1);
-    if ((m ?? []).length) return true;
-  }
-  return false;
-}
-

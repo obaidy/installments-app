@@ -141,11 +141,10 @@ app.post('/payments/webhook', express.raw({ type: 'application/json' }), webhook
 app.use(express.json());
 
 // ⬇️ Mount the new unified router (Stripe now; flip USE_QI=1 later)
-app.use('/payments', paymentsRouter);
+app.use('/payment-methods', paymentMethodsRouter);
 app.use('/auth', authRouter);
+app.use('/payments', paymentsRouter);
 app.use('/reconcile', reconcileRouter);
-app.use('/payments', paymentMethodsRouter);
-
 // Simple health check
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
