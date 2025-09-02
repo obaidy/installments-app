@@ -1,161 +1,104 @@
 import 'dotenv/config';
-import express, { RequestHandler } from 'express';
+import express from 'express';
 import cors from 'cors';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 
-// We'll construct a Stripe client lazily for webhook verification to avoid requiring env on import.
-import { supabaseService } from '../lib/supabaseServiceClient';
+import { stripe } from '../lib/stripeClient';
+import { supabase } from '../lib/supabaseServiceClient';
 
-// ⬇️ New: unified payments router (provides /payments/checkout and /payments/status/:ref)
-import paymentsRouter from './routes/payments';
-import authRouter from './routes/auth';
-import reconcileRouter from './routes/reconcile';
+// Routers
 import paymentMethodsRouter from './routes/paymentMethods';
+import paymentsRouter from './routes/payments';
+import reconcileRouter from './routes/reconcile';
+import authRouter from './routes/auth';
 
-export const app = express();
-// CORS (allow dev; restrict in prod via ALLOWED_ORIGINS comma list)
-const allowed = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // mobile/node
-    if (!allowed.length || allowed.includes(origin)) return cb(null, true);
-    return cb(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','authorization','X-Idempotency-Key','Origin','X-Requested-With','Accept'],
-  credentials: true,
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+const app = express();
 
-function mapStripeStatus(
-  status: string,
-): 'paid' | 'pending' | 'failed' | 'cancelled' {
-  switch (status) {
-    case 'succeeded':
-      return 'paid';
-    case 'processing':
-      return 'pending';
-    case 'requires_payment_method':
-      return 'failed';
-    case 'canceled':
-      return 'cancelled';
-    default:
-      return 'pending';
-  }
-}
+// CORS first
+app.use(cors());
 
-/**
- * IMPORTANT: Stripe webhook must use raw body and be registered
- * BEFORE express.json(), otherwise signature verification fails.
- */
-export const webhookHandler: RequestHandler = async (req, res) => {
-  const sig = req.headers['stripe-signature'] as string;
-  const secret = process.env.STRIPE_WEBHOOK_SECRET as string;
-  if (!sig || !secret) {
-    res.status(400).json({ error: 'Missing webhook signature' });
-    return;
-  }
-
-  let event: Stripe.Event;
-  try {
-    // Verify webhook without needing a client instance
-    
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', { apiVersion: '2022-11-15' as any });
-    event = stripe.webhooks.constructEvent(req.body as any, sig, secret);
-
-  } catch (err: any) {
-    res.status(400).json({ error: `Webhook Error: ${err.message}` });
-    return;
-  }
-
-  if (event.type.startsWith('payment_intent')) {
-    const intent = event.data.object as Stripe.PaymentIntent;
-
-    // Safely read metadata (may be undefined)
-    const unitId = intent.metadata?.unit_id
-      ? Number(intent.metadata.unit_id)
-      : undefined;
-    const installmentId = intent.metadata?.installment_id
-      ? Number(intent.metadata.installment_id)
-      : undefined;
-    const serviceFeeId = intent.metadata?.service_fee_id
-      ? Number(intent.metadata.service_fee_id)
-      : undefined;
-    const amount = intent.amount_received ?? intent.amount ?? 0;
-    const status = mapStripeStatus(intent.status);
-
-    // Update payment_intents if exists
+// --- Stripe webhook MUST be before express.json() and use raw body ---
+app.post(
+  '/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
     try {
-      await supabaseService
-        .from('payment_intents')
-        .update({ status: intent.status as any, provider: 'stripe' })
-        .eq('provider_ref', intent.id);
-    } catch {}
+      const sig = req.headers['stripe-signature'] as string | undefined;
+      const secret = process.env.STRIPE_WEBHOOK_SECRET;
+      if (!sig || !secret) {
+        return res.status(400).json({ error: 'Missing webhook signature/secret' });
+      }
 
-    // Upsert payment row if we have linkage data
-    if (unitId && (installmentId || serviceFeeId)) {
-      await supabaseService.from('payments').upsert({
-        unit_id: unitId,
-        installment_id: installmentId,
-        service_fee_id: serviceFeeId,
-        amount: amount / 100,
-        status,
-        provider: 'stripe',
-        provider_ref: intent.id,
-        paid_at: status === 'paid' ? new Date().toISOString() : null,
-      });
+      let event: Stripe.Event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, secret);
+      } catch (err: any) {
+        return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+      }
 
-      if (status === 'paid') {
-        if (installmentId) {
-          await supabaseService
-            .from('installments')
-            .update({
-              paid: true,
-              paid_at: new Date().toISOString(),
-            })
-            .eq('id', installmentId);
-        } else if (serviceFeeId) {
-          await supabaseService
-            .from('service_fees')
-            .update({
-              paid: true,
-              paid_at: new Date().toISOString(),
-            })
-            .eq('id', serviceFeeId);
+      if (event.type.startsWith('payment_intent.')) {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        const unitId = Number(intent.metadata?.unit_id);
+        const installmentId = Number(intent.metadata?.installment_id);
+        const amountCents = intent.amount_received || intent.amount || 0;
+
+        if (unitId && installmentId) {
+          // Mirror to payments
+          await supabase.from('payments').upsert({
+            unit_id: unitId,
+            installment_id: installmentId,
+            amount: amountCents / 100,
+            status: intent.status as any,
+            paid_at:
+              intent.status === 'succeeded'
+                ? new Date().toISOString()
+                : null,
+          } as any);
+
+          // Mark installment paid on success
+          if (intent.status === 'succeeded') {
+            await supabase
+              .from('installments')
+              .update({ paid: true, paid_at: new Date().toISOString() })
+              .eq('id', installmentId);
+          }
         }
       }
+
+      return res.json({ received: true });
+    } catch (e: any) {
+      console.error('[webhook] error', e?.message || e);
+      return res.status(500).json({ error: 'internal webhook error' });
     }
   }
+);
 
-  res.json({ received: true });
-};
-
-// Stripe webhook endpoint (raw body parser)
-app.post('/payments/webhook', express.raw({ type: 'application/json' }), webhookHandler);
-
-// JSON parser for all other routes AFTER webhook
+// JSON body AFTER webhook
 app.use(express.json());
 
-// ⬇️ Mount the new unified router (Stripe now; flip USE_QI=1 later)
+// Healthcheck
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
+
+// Mount feature routers
 app.use('/payment-methods', paymentMethodsRouter);
-app.use('/auth', authRouter);
 app.use('/payments', paymentsRouter);
 app.use('/reconcile', reconcileRouter);
-// Simple health check
-app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.use('/auth', authRouter);
 
-export function startServer() {
-  const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => {
-    console.log(`API server listening on port ${PORT}`);
-  });
-}
+// Global error guard
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+});
+
+// Start server
+const PORT = Number(process.env.PORT || 3001);
+app.listen(PORT, () => {
+  console.log(`✅ API server listening on http://localhost:${PORT}`);
+});
 
 export default app;
-
-
-

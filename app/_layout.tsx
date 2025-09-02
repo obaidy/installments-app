@@ -7,7 +7,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
-import { QueryProvider } from './_providers/QueryProvider';
+import QueryProvider from './_providers/QueryProvider';
 import { StripeProvider } from '@stripe/stripe-react-native';
 
 export default function RootLayout() {
