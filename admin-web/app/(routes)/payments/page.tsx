@@ -29,10 +29,14 @@ export default function PaymentsPage() {
     const from = p * pageSize; const to = from + pageSize - 1;
     const { data } = await supabase
       .from('payments')
-      .select('id, amount, status, paid_at, units(name)')
+      .select('id, unit_id, amount, status, paid_at')
       .order('paid_at', { ascending: false })
       .range(from, to);
-    const list = ((data as any[]) || []).map(p => ({ id: p.id as number, unit: p.units?.name || '-', amount: p.amount as number, status: p.status as Row['status'], paidAt: p.paid_at as string | null }));
+    const unitIds = Array.from(new Set(((data as any[])||[]).map((r:any)=>r.unit_id))).filter(Boolean);
+    const { data: units } = await supabase.from('units').select('id, name').in('id', unitIds.length?unitIds:['-1']);
+    const umap = new Map<number, string>();
+    ((units as any[])||[]).forEach((u:any)=>umap.set(u.id, u.name));
+    const list = ((data as any[]) || []).map(p => ({ id: p.id as number, unit: umap.get(p.unit_id as number) || '-', amount: p.amount as number, status: p.status as Row['status'], paidAt: p.paid_at as string | null }));
     setRows(list);
     setHasMore(list.length === pageSize);
     setLoading(false);

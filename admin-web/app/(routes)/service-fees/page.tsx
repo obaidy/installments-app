@@ -30,13 +30,17 @@ export default function ServiceFeesPage() {
     const from = p * pageSize; const to = from + pageSize - 1;
     const { data } = await supabase
       .from('service_fees')
-      .select('id, amount_iqd, due_date, paid, units(name)')
+      .select('id, unit_id, amount_iqd, due_date, paid')
       .order('due_date', { ascending: true })
       .range(from, to);
+    const unitIds = Array.from(new Set(((data as any[])||[]).map((r:any)=>r.unit_id))).filter(Boolean);
+    const { data: units } = await supabase.from('units').select('id, name').in('id', unitIds.length?unitIds:['-1']);
+    const umap = new Map<number, string>();
+    ((units as any[])||[]).forEach((u:any)=>umap.set(u.id, u.name));
     const list = ((data as any[]) || []).map(r => {
       const d = new Date(r.due_date as string);
       const st: Row['status'] = r.paid ? 'paid' : (d < now ? 'overdue' : 'due');
-      return { id: r.id as number, unit: (r.units?.name as string) || '-', amount: r.amount_iqd as number, dueDate: r.due_date as string, status: st };
+      return { id: r.id as number, unit: (umap.get(r.unit_id as number) as string) || '-', amount: r.amount_iqd as number, dueDate: r.due_date as string, status: st };
     });
     setRows(list);
     setHasMore(list.length === pageSize);

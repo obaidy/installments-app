@@ -326,6 +326,14 @@ router.post('/wallet/apply', requireUser, async (req: AuthenticatedRequest, res)
         else await supabase.from('service_fees').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', d.id);
         await supabase.from('wallet_transactions').insert({ user_id: req.user!.id, amount: -d.amount, kind: 'apply', ref: `${d.kind}:${d.id}` });
         remaining -= d.amount; applied += d.amount;
+      } else {
+        // apply partial; leave due open
+        const part = remaining;
+        await supabase.from('payments').insert({ unit_id: d.unit_id, amount: part, status: 'paid', paid_at: new Date().toISOString(), ...(d.kind==='installment'?{ installment_id: d.id }:{ service_fee_id: d.id }) } as any);
+        await supabase.from('wallet_transactions').insert({ user_id: req.user!.id, amount: -part, kind: 'apply', ref: `${d.kind}:${d.id}` });
+        applied += part;
+        remaining = 0;
+        break;
       }
     }
     await supabase.from('wallets').upsert({ user_id: req.user!.id, balance: remaining });

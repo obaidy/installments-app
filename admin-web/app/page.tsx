@@ -32,9 +32,13 @@ export default function Page() {
       // Fetch money table rows (latest 50 by due date)
       const { data: inst } = await supabase
         .from('installments')
-        .select('id, amount_iqd, due_date, paid, units(name, autopay_enabled)')
+        .select('id, unit_id, amount_iqd, due_date, paid')
         .order('due_date', { ascending: true })
         .limit(50);
+      const uids = Array.from(new Set(((inst as any[])||[]).map((r:any)=>r.unit_id))).filter(Boolean);
+      const { data: uinfo } = await supabase.from('units').select('id, name, autopay_enabled').in('id', uids.length?uids:['-1']);
+      const umap = new Map<number, { name?: string|null; autopay?: boolean }>();
+      ((uinfo as any[])||[]).forEach((u:any)=>umap.set(u.id, { name: u.name, autopay: !!u.autopay_enabled }));
 
       const mapped: Row[] = (inst as any[] || []).map((r) => {
         const dueDate = r.due_date as string;
@@ -42,11 +46,11 @@ export default function Page() {
         let status: Status = r.paid ? 'paid' : (d < now ? 'overdue' : 'due');
         return {
           id: String(r.id),
-          unit: r.units?.name || `Unit ${r.unit_id ?? ''}`,
+          unit: umap.get(r.unit_id as number)?.name || `Unit ${r.unit_id ?? ''}`,
           dueDate,
           amount: r.amount_iqd as number,
           status,
-          autopay: !!r.units?.autopay_enabled,
+          autopay: !!umap.get(r.unit_id as number)?.autopay,
         };
       });
       setRows(mapped);
@@ -113,9 +117,9 @@ export default function Page() {
         <Card className="kpi-gradient text-white">
           <CardContent className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <KpiCard title="Due Today" value={kpis.dueToday} spark={<Sparkline values={[4,6,3,8,7,10,9]} />} href="/installments" />
-              <KpiCard title="Next 30 Days" value={kpis.next30} spark={<Sparkline values={[10,9,11,12,10,8,9]} />} href="/installments" />
-              <KpiCard title="Past Due" value={kpis.pastDue} spark={<Sparkline values={[7,6,7,9,8,7,6]} />} href="/installments" />
+              <KpiCard title="Due Today" value={kpis.dueToday} spark={<Sparkline values={[4,6,3,8,7,10,9]} />} href="/installments?filter=due" />
+              <KpiCard title="Next 30 Days" value={kpis.next30} spark={<Sparkline values={[10,9,11,12,10,8,9]} />} href="/installments?filter=due" />
+              <KpiCard title="Past Due" value={kpis.pastDue} spark={<Sparkline values={[7,6,7,9,8,7,6]} />} href="/installments?filter=overdue" />
               <KpiCard title="Collected MTD" value={kpis.collectedMtd} spark={<Sparkline values={[5,7,9,12,14,13,15]} />} href="/payments" />
             </div>
           </CardContent>
