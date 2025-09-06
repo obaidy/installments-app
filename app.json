@@ -8,9 +8,7 @@
     "scheme": "installmentsapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
+    "ios": { "supportsTablet": true },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -37,7 +35,12 @@
       "expo-secure-store"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "@EXPO_PUBLIC_SUPABASE_URL",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "@EXPO_PUBLIC_SUPABASE_ANON_KEY"
     }
   }
 }

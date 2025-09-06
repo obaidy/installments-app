@@ -148,7 +148,7 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>
-      <ClientHeader />
+      <ClientHeader insetTop={false} />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadAll} />}
         contentContainerStyle={{ padding: 16, gap: 16 }}

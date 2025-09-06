@@ -78,7 +78,7 @@ export default function UpcomingInstallmentsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ClientHeader title={t('upcomingDues')} />
+      <ClientHeader title={t('upcomingDues')} insetTop={false} />
       <FlatList
         contentContainerStyle={{ padding: 16, gap: 12 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchDues} />}

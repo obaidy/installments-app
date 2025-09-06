@@ -12,7 +12,7 @@ export async function main() {
   const now = new Date().toISOString();
   const { data: installments, error } = await supabase
     .from('installments')
-    .select('id, unit_id, amount_iqd, units(customer_id, autopay_enabled)')
+    .select('id, unit_id, amount_iqd, due_date, units(customer_id, autopay_enabled, autopay_day)')
     .eq('paid', false)
     .lte('due_date', now);
 
@@ -22,9 +22,12 @@ export async function main() {
     let failures = 0;
 
   for (const inst of installments as any[]) {
-    const customerId = inst.units?.customer_id;
+    const customerId = inst.units?.customer_id as string | undefined;
     const autopay = !!inst.units?.autopay_enabled;
+    const autopayDay = (inst.units as any)?.autopay_day as number | null | undefined;
     if (!customerId || !autopay) continue;
+    // If a smart autopay day is set, only charge on that day of month
+    if (autopayDay && new Date().getDate() !== Number(autopayDay)) continue;
     const amount = inst.amount_iqd as number;
     try {
       const intent = await chargeCustomer(
@@ -98,4 +101,3 @@ main().then((failures) => {
     console.log('All charges processed successfully.');
   }
 });
-

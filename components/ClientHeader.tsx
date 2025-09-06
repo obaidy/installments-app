@@ -7,7 +7,7 @@ import { signOut } from '../lib/supabaseClient';
 import { setAppLanguage, type AppLanguage } from '../lib/i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function ClientHeader({ title }: { title?: string }) {
+export default function ClientHeader({ title, insetTop = true }: { title?: string; insetTop?: boolean }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -25,8 +25,9 @@ export default function ClientHeader({ title }: { title?: string }) {
     setAppLanguage(lang);
   }
 
+  const padTop = insetTop ? insets.top : 0;
   return (
-    <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white' }}>
+    <View style={{ paddingTop: padTop, paddingHorizontal: 16, paddingBottom: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'transparent' }}>
       <TouchableOpacity onPress={() => setOpen(true)} accessibilityLabel="menu">
         <Ionicons name="menu-outline" size={26} color="#111827" />
       </TouchableOpacity>

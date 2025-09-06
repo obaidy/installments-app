@@ -156,6 +156,32 @@ router.post('/checkout-batch', optionalUser, async (req: AuthenticatedRequest, r
   }
 });
 
+/** Wallet endpoints */
+router.post('/wallet/topup', requireUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { amountIQD, amountInCents } = req.body ?? {};
+    let amountCents = Number(amountInCents);
+    if (!Number.isFinite(amountCents)) amountCents = Math.round(Number(amountIQD) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) return res.status(400).json({ ok: false, error: 'invalid amount' });
+    const email = req.user?.email || '';
+    if (!email) return res.status(400).json({ ok: false, error: 'email required' });
+    const customer = await createOrRetrieveCustomer(email);
+    const intent = await chargeCustomer(customer.id, amountCents, { wallet_topup: '1', user_id: req.user!.id } as any);
+    if (intent.status === 'succeeded') {
+      const amount = amountCents / 100;
+      await supabase.from('wallets').upsert({ user_id: req.user!.id, balance: 0 });
+      await supabase.from('wallet_transactions').insert({ user_id: req.user!.id, amount, kind: 'topup', ref: intent.id });
+      // Update balance: in a real app, use a DB trigger. Here we read + write.
+      const { data: w } = await supabase.from('wallets').select('balance').eq('user_id', req.user!.id).maybeSingle();
+      const newBal = Number((w as any)?.balance || 0) + amount;
+      await supabase.from('wallets').upsert({ user_id: req.user!.id, balance: newBal });
+    }
+    res.json({ ok: true, status: intent.status });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
+
 /**
  * Family/Friend payer link endpoints
  */

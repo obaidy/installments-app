@@ -79,7 +79,7 @@ export default function PaymentHistoryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ClientHeader title={t('paymentHistory')} />
+      <ClientHeader title={t('paymentHistory')} insetTop={false} />
       <View style={{ paddingHorizontal: 16 }}>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
           <FilterPill icon="albums-outline" label={t('seeAll')} active={filter==='all'} onPress={() => setFilter('all')} />

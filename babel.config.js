@@ -1,10 +1,10 @@
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
+    presets: ['babel-preset-expo'], // includes expo-router in SDK ≥50
     plugins: [
-      'expo-router/babel',          // <-- required for expo-router
-      'react-native-reanimated/plugin', // keep LAST if you use Reanimated
+      // keep LAST if you actually use Reanimated; remove if you don't
+      'react-native-reanimated/plugin',
     ],
   };
 };
