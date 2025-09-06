@@ -11,16 +11,6 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/(routes)/users/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(routes)/users/page.js"
-    ],
-    "/(routes)/complexes/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(routes)/complexes/page.js"
-    ],
     "/(routes)/units/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -36,10 +26,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/auth/layout.js"
     ],
-    "/reconciliation/page": [
+    "/(routes)/users/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/reconciliation/page.js"
+      "static/chunks/app/(routes)/users/page.js"
     ]
   }
 }

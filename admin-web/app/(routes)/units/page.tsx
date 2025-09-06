@@ -1,13 +1,13 @@
 "use client";
-import { useEffect, useMemo, useState } from 'react';
+import { DataTable, type Column } from '@/components/DataTable';
+import { ExportButton } from '@/components/ExportButton';
 import { Shell } from '@/components/Shell';
 import { Toolbar } from '@/components/Toolbar';
-import { DataTable, type Column } from '@/components/DataTable';
 import { Modal } from '@/components/ui/modal';
-import { supabase } from '@/lib/supabaseClient';
-import { ExportButton } from '@/components/ExportButton';
-import { useTheme } from '@/lib/theme';
 import { t } from '@/lib/i18n';
+import { supabase } from '@/lib/supabaseClient';
+import { useTheme } from '@/lib/theme';
+import { useEffect, useMemo, useState } from 'react';
 
 type UnitRow = { id: number; name: string; complex?: string; complex_id?: number; user_id?: string | null; owner?: string | null; autopay?: boolean };
 type Complex = { id: number; name: string };
@@ -41,10 +41,10 @@ export default function UnitsPage() {
   async function fetchAll(p: number) {
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/units?page=${p}&pageSize=${pageSize}`, { credentials: 'include' });
+      const r = await fetch(`/api/admin/units/list?page=${p}&pageSize=${pageSize}`, { credentials: 'include' });
       const d = await r.json();
       if (!r.ok || !d?.ok) throw new Error(d?.error || 'fetch failed');
-      const rows = (d.data as any[]).map((u:any) => ({
+      const rows = (d.rows as any[]).map((u:any) => ({
         id: u.id as number,
         name: u.name as string,
         complex_id: u.complex_id as number,
