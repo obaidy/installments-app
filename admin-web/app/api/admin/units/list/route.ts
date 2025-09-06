@@ -10,12 +10,16 @@ export async function GET(req: Request) {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    // AuthN & admin check
-    const sb = createRouteHandlerClient({ cookies });
+    // AuthN check (RLS enforces admin-only access for units)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[units/list] Missing Supabase env in admin-web');
+      return NextResponse.json({ error: 'ENV_MISSING_SUPABASE' }, { status: 500 });
+    }
+    const sb = createRouteHandlerClient({ cookies, supabaseUrl, supabaseKey });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    const { data: role } = await sb.from('user_roles').select('role').eq('user_id', user.id).maybeSingle();
-    if ((role?.role as string|undefined) !== 'admin') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
     // Use the caller's session (RLS) instead of service role to avoid env pitfalls
     const { data: units, error: uErr } = await sb
@@ -23,7 +27,10 @@ export async function GET(req: Request) {
       .select('id, name, complex_id, user_id, autopay_enabled')
       .order('name')
       .range(from, to);
-    if (uErr) return NextResponse.json({ error: `UNITS: ${uErr.message}` }, { status: 500 });
+    if (uErr) {
+      console.error('[units/list] units error:', uErr.message);
+      return NextResponse.json({ error: `UNITS: ${uErr.message}` }, { status: 500 });
+    }
 
     const complexIds = Array.from(new Set((units||[]).map((u:any)=>u.complex_id).filter(Boolean)));
     const userIds = Array.from(new Set((units||[]).map((u:any)=>u.user_id).filter(Boolean)));
@@ -32,8 +39,14 @@ export async function GET(req: Request) {
       complexIds.length ? sb.from('complexes').select('id, name').in('id', complexIds) : Promise.resolve({ data: [] as any[], error: null as any }),
       userIds.length ? sb.from('profiles').select('user_id, email, full_name').in('user_id', userIds) : Promise.resolve({ data: [] as any[], error: null as any }),
     ]);
-    if (cErr) return NextResponse.json({ error: `COMPLEXES: ${cErr.message}` }, { status: 500 });
-    if (pErr) return NextResponse.json({ error: `PROFILES: ${pErr.message}` }, { status: 500 });
+    if (cErr) {
+      console.error('[units/list] complexes error:', cErr.message);
+      return NextResponse.json({ error: `COMPLEXES: ${cErr.message}` }, { status: 500 });
+    }
+    if (pErr) {
+      console.error('[units/list] profiles error:', pErr.message);
+      return NextResponse.json({ error: `PROFILES: ${pErr.message}` }, { status: 500 });
+    }
 
     const cmap = new Map<number, string>();
     (complexes||[]).forEach((c:any)=>cmap.set(c.id, c.name));

@@ -41,11 +41,20 @@ export default function UnitsPage() {
   async function fetchAll(p: number) {
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/units/list?page=${p}&pageSize=${pageSize}`);
+      const r = await fetch(`/api/admin/units?page=${p}&pageSize=${pageSize}`, { credentials: 'include' });
       const d = await r.json();
       if (!r.ok || !d?.ok) throw new Error(d?.error || 'fetch failed');
-      setRows(d.rows as any[]);
-      setHasMore((d.rows as any[]).length === pageSize);
+      const rows = (d.data as any[]).map((u:any) => ({
+        id: u.id as number,
+        name: u.name as string,
+        complex_id: u.complex_id as number,
+        complex: u.complexes?.name as string | undefined,
+        user_id: (u.user_id as string|undefined)|| null,
+        owner: (u.owner?.email as string|undefined) || (u.owner?.full_name as string|undefined) || null,
+        autopay: !!u.autopay_enabled,
+      }));
+      setRows(rows);
+      setHasMore(rows.length === pageSize);
     } catch (e) {
       // fallback client-side (best effort)
       const from = p * pageSize; const to = from + pageSize - 1;

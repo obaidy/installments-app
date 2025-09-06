@@ -1,9 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/(routes)/units/page": "app/(routes)/units/page.js",
-  "/api/admin/units/list/route": "app/api/admin/units/list/route.js",
-  "/(routes)/payments/page": "app/(routes)/payments/page.js",
   "/(routes)/users/page": "app/(routes)/users/page.js",
+  "/api/admin/units/route": "app/api/admin/units/route.js",
+  "/(routes)/units/page": "app/(routes)/units/page.js",
+  "/page": "app/page.js",
   "/(routes)/complexes/page": "app/(routes)/complexes/page.js",
+  "/reconciliation/page": "app/reconciliation/page.js",
   "/auth/login/page": "app/auth/login/page.js"
 }
