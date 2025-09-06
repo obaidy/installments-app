@@ -43,9 +43,14 @@ export default function LoginPage() {
       if (error) throw error;
 
       // 2) Fetch role + approval (RLS must allow self-read)
+      // 2) Fetch role + approval for the signed-in user
+      const { data: userRes } = await supabaseBrowser.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error('No user after sign-in');
+
       const [{ data: statusRow, error: sErr }, { data: roleRow, error: rErr }] = await Promise.all([
-        supabaseBrowser.from('user_status').select('status').maybeSingle(),
-        supabaseBrowser.from('user_roles').select('role').maybeSingle(),
+        supabaseBrowser.from('user_status').select('status').eq('user_id', uid).limit(1).maybeSingle(),
+        supabaseBrowser.from('user_roles').select('role').eq('user_id', uid).limit(1).maybeSingle(),
       ]);
       if (sErr) throw sErr;
       if (rErr) throw rErr;

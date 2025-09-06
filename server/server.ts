@@ -40,27 +40,34 @@ app.post(
         const intent = event.data.object as Stripe.PaymentIntent;
         const unitId = Number(intent.metadata?.unit_id);
         const installmentId = Number(intent.metadata?.installment_id);
+        const serviceFeeId = Number((intent.metadata as any)?.service_fee_id || 0);
         const amountCents = intent.amount_received || intent.amount || 0;
 
-        if (unitId && installmentId) {
-          // Mirror to payments
-          await supabase.from('payments').upsert({
+        if (unitId && (installmentId || serviceFeeId)) {
+          const base: any = {
             unit_id: unitId,
-            installment_id: installmentId,
             amount: amountCents / 100,
             status: intent.status as any,
-            paid_at:
-              intent.status === 'succeeded'
-                ? new Date().toISOString()
-                : null,
-          } as any);
+            paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+          };
+          if (installmentId) base.installment_id = installmentId;
+          if (serviceFeeId) base.service_fee_id = serviceFeeId;
 
-          // Mark installment paid on success
+          await supabase.from('payments').upsert(base as any);
+
+          // Mark paid on success
           if (intent.status === 'succeeded') {
-            await supabase
-              .from('installments')
-              .update({ paid: true, paid_at: new Date().toISOString() })
-              .eq('id', installmentId);
+            if (installmentId) {
+              await supabase
+                .from('installments')
+                .update({ paid: true, paid_at: new Date().toISOString() })
+                .eq('id', installmentId);
+            } else if (serviceFeeId) {
+              await supabase
+                .from('service_fees')
+                .update({ paid: true, paid_at: new Date().toISOString() })
+                .eq('id', serviceFeeId);
+            }
           }
         }
       }
@@ -79,6 +86,15 @@ app.use(express.json());
 // Healthcheck
 app.get('/health', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime() });
+});
+
+// Friendly root endpoint
+app.get('/', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'installments-api',
+    endpoints: ['/health', '/auth/*', '/payments/*', '/payment-methods/*', '/reconcile/*'],
+  });
 });
 
 // Mount feature routers

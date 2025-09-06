@@ -1,23 +1,26 @@
-import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, FlatList, StyleSheet, SafeAreaView, RefreshControl } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '../../components/ThemedText';
 import { useRouter } from 'expo-router';
 import InstallmentCard, { type Installment as InstallmentItem } from '../../components/InstallmentCard';
+import ClientHeader from '../../components/ClientHeader';
+import { useTranslation } from 'react-i18next';
 
 type DueItem = InstallmentItem;
 
 export default function UpcomingInstallmentsScreen() {
   const [dues, setDues] = useState<DueItem[]>([]);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const [refreshing, setRefreshing] = useState(true);
 
   useEffect(() => {
     fetchDues();
   }, []);
 
-  async function fetchDues() {
-    setLoading(true);
+  const fetchDues = useCallback(async () => {
+    setRefreshing(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -54,8 +57,8 @@ export default function UpcomingInstallmentsScreen() {
       .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime());
 
     setDues(mapped);
-    setLoading(false);
-  }
+    setRefreshing(false);
+  }, []);
 
   function renderItem({ item }: { item: DueItem }) {
     return (
@@ -74,24 +77,22 @@ export default function UpcomingInstallmentsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Upcoming Dues</ThemedText>
-      {loading ? (
-        <View style={{ gap: 10 }}>
-          <ThemedText>Loading…</ThemedText>
-        </View>
-      ) : (
+    <SafeAreaView style={styles.container}>
+      <ClientHeader title={t('upcomingDues')} />
       <FlatList
+        contentContainerStyle={{ padding: 16, gap: 12 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchDues} />}
         data={dues}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
+        ListEmptyComponent={<ThemedText>{refreshing ? t('loading') : t('noDues')}</ThemedText>}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />)}
-    </View>
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1 },
   separator: { height: 10 },
 });

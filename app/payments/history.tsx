@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, FlatList, StyleSheet, SafeAreaView, RefreshControl, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
 import { ThemedText } from '../../components/ThemedText';
-import { SkeletonList } from '../../components/Skeleton';
+import { useTranslation } from 'react-i18next';
+import { formatIQD } from '../../lib/format';
+import ClientHeader from '../../components/ClientHeader';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 type Payment = {
   id: number;
@@ -15,14 +18,16 @@ type Payment = {
 
 export default function PaymentHistoryScreen() {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const [refreshing, setRefreshing] = useState(true);
+  const [filter, setFilter] = useState<'all'|'installment'|'service_fee'>('all');
 
   useEffect(() => {
     fetchPayments();
   }, []);
 
-  async function fetchPayments() {
-    setLoading(true);
+  const fetchPayments = useCallback(async () => {
+    setRefreshing(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -57,47 +62,60 @@ export default function PaymentHistoryScreen() {
       setPayments(mapped);
 
     }
-    setLoading(false);
-  }
+    setRefreshing(false);
+  }, []);
 
   function renderItem({ item }: { item: Payment }) {
     return (
-      <View style={styles.item}>
-        <ThemedText>Amount: {item.amount}</ThemedText>
-        <ThemedText>
-          Type: {item.type === 'service_fee' ? 'Service Fee' : 'Installment'}
-        </ThemedText>
-        <ThemedText>
-        Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : ''}
-        </ThemedText>
-        <ThemedText>
-          Paid:{' '}
-          {item.paid_at ? new Date(item.paid_at).toLocaleDateString() : ''}
-        </ThemedText>
-        <ThemedText>Status: {item.status}</ThemedText>
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <ThemedText style={styles.amount}>{formatIQD(item.amount)}</ThemedText>
+          <ThemedText style={styles.subtle}>{item.paid_at ? new Date(item.paid_at).toLocaleDateString() : ''}</ThemedText>
+        </View>
+        <ThemedText style={styles.subtle}>{item.type === 'service_fee' ? t('typeServiceFee') : t('typeInstallment')}</ThemedText>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="title">Payment History</ThemedText>
-      {loading ? <SkeletonList rows={6} /> : payments.length === 0 ? (
-        <ThemedText>No payments yet.</ThemedText>
-      ) : (
+    <SafeAreaView style={styles.container}>
+      <ClientHeader title={t('paymentHistory')} />
+      <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+          <FilterPill icon="albums-outline" label={t('seeAll')} active={filter==='all'} onPress={() => setFilter('all')} />
+          <FilterPill icon="calendar-outline" label={t('typeInstallment')} active={filter==='installment'} onPress={() => setFilter('installment')} />
+          <FilterPill icon="construct-outline" label={t('typeServiceFee')} active={filter==='service_fee'} onPress={() => setFilter('service_fee')} />
+        </View>
+      </View>
       <FlatList
-        data={payments}
+        contentContainerStyle={{ padding: 16, gap: 12 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchPayments} />}
+        data={payments.filter(p => filter === 'all' ? true : p.type === filter)}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
+        ListEmptyComponent={<ThemedText>{refreshing ? t('loading') : t('noPayments')}</ThemedText>}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />)}
-    </View>
+      />
+    </SafeAreaView>
+  );
+}
+
+function FilterPill({ label, icon, active, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; active?: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: active ? '#111827' : '#F3F4F6' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name={icon} size={16} color={active ? 'white' : '#111827'} />
+        <ThemedText style={{ color: active ? 'white' : '#111827', fontWeight: '600' }}>{label}</ThemedText>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  item: { padding: 12, backgroundColor: '#fff', borderRadius: 4 },
+  container: { flex: 1 },
+  card: { padding: 16, backgroundColor: '#fff', borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  amount: { fontWeight: '700', fontSize: 16 },
+  subtle: { color: '#6B7280' },
   separator: { height: 10 },
 });
-

@@ -12,7 +12,18 @@ export async function createCheckout(
 const returnUrl = Linking.createURL('/(client)/payments/return');
 const r = await fetch(`${API_BASE}/payments/checkout`, {
 method: 'POST', headers: { 'content-type': 'application/json' },
-body: JSON.stringify({ amountIQD, description, metadata, returnUrl, target_type: target?.type, target_id: target?.id })
+body: JSON.stringify({
+  amountIQD,
+  description,
+  metadata,
+  returnUrl,
+  target_type: target?.type,
+  target_id: target?.id,
+  // Provide server-friendly fields when available
+  unitId: metadata?.unit_id ? Number(metadata.unit_id) : undefined,
+  installmentId: target?.type === 'installment' ? target.id : undefined,
+  serviceFeeId: target?.type === 'service_fee' ? target.id : undefined,
+})
 });
 const data = await r.json();
 if (!r.ok) throw new Error(data?.error || 'Payment error');

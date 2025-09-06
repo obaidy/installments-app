@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { formatIQD } from '../lib/format';
+import { useTranslation } from 'react-i18next';
 
 export type Installment = {
   id: number;               // BIGINT -> number
@@ -20,6 +21,7 @@ export default function InstallmentCard({
   onPay?: (i: Installment) => void;
   onPromise?: (i: Installment) => void;
 }) {
+  const { t } = useTranslation();
   const due = new Date(item.due_date);
   const today = new Date();
 
@@ -45,23 +47,23 @@ export default function InstallmentCard({
         <StatusBadge status={status} />
       </View>
       <Text style={{ color: '#6B7280' }}>
-        {item.type === 'service_fee' ? 'Service Fee' : 'Installment'}
+        {item.type === 'service_fee' ? t('typeServiceFee') : t('typeInstallment')}
       </Text>
-      <Text style={{ color: '#6B7280' }}>Due: {due.toDateString()}</Text>
+      <Text style={{ color: '#6B7280' }}>{t('due')}: {due.toDateString()}</Text>
       {!isPaid && (
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
             onPress={() => onPay?.(item)}
             style={{ flex: 1, backgroundColor: '#111827', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
           >
-            <Text style={{ color: 'white', fontWeight: '700' }}>Pay</Text>
+            <Text style={{ color: 'white', fontWeight: '700' }}>{t('pay')}</Text>
           </TouchableOpacity>
           {isOverdue ? (
             <TouchableOpacity
               onPress={() => onPromise?.(item)}
               style={{ flex: 1, backgroundColor: '#374151', paddingVertical: 10, borderRadius: 12, alignItems: 'center' }}
             >
-              <Text style={{ color: 'white', fontWeight: '700' }}>Promise</Text>
+            <Text style={{ color: 'white', fontWeight: '700' }}>{t('promise')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -73,7 +75,8 @@ export default function InstallmentCard({
 function StatusBadge({ status }: { status: 'paid' | 'due' | 'overdue' }) {
   const bg = status === 'paid' ? '#DCFCE7' : status === 'overdue' ? '#FEE2E2' : '#E5E7EB';
   const fg = status === 'paid' ? '#166534' : status === 'overdue' ? '#991B1B' : '#374151';
-  const label = status === 'paid' ? 'Paid' : status === 'overdue' ? 'Overdue' : 'Due';
+  const { t } = useTranslation();
+  const label = status === 'paid' ? t('paid') : status === 'overdue' ? t('overdue') : t('due');
   return (
     <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 }}>
       <Text style={{ color: fg, fontWeight: '600', fontSize: 12 }}>{label}</Text>

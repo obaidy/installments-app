@@ -9,6 +9,8 @@ import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
 import QueryProvider from './_providers/QueryProvider';
 import { StripeProvider } from '@stripe/stripe-react-native';
+// Initialize i18n at app start
+import '../lib/i18n';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -34,7 +36,7 @@ export default function RootLayout() {
             <Stack initialRouteName="index">
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              {/* Removed old tabs group for unified client UX */}
               {/* Group routes don't need explicit Stack.Screen entries */}
               <Stack.Screen name="+not-found" />
             </Stack>
