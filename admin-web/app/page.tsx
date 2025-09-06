@@ -113,18 +113,18 @@ export default function Page() {
         <Card className="kpi-gradient text-white">
           <CardContent className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <KpiCard title="Due Today" value={kpis.dueToday} spark={<Sparkline values={[4,6,3,8,7,10,9]} />} />
-              <KpiCard title="Next 30 Days" value={kpis.next30} spark={<Sparkline values={[10,9,11,12,10,8,9]} />} />
-              <KpiCard title="Past Due" value={kpis.pastDue} spark={<Sparkline values={[7,6,7,9,8,7,6]} />} />
-              <KpiCard title="Collected MTD" value={kpis.collectedMtd} spark={<Sparkline values={[5,7,9,12,14,13,15]} />} />
+              <KpiCard title="Due Today" value={kpis.dueToday} spark={<Sparkline values={[4,6,3,8,7,10,9]} />} href="/installments" />
+              <KpiCard title="Next 30 Days" value={kpis.next30} spark={<Sparkline values={[10,9,11,12,10,8,9]} />} href="/installments" />
+              <KpiCard title="Past Due" value={kpis.pastDue} spark={<Sparkline values={[7,6,7,9,8,7,6]} />} href="/installments" />
+              <KpiCard title="Collected MTD" value={kpis.collectedMtd} spark={<Sparkline values={[5,7,9,12,14,13,15]} />} href="/payments" />
             </div>
           </CardContent>
         </Card>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatsCard title="Users" value={userCount} />
-          <StatsCard title="Complexes" value={complexCount} />
-          <StatsCard title="Units" value={unitCount} />
-          <StatsCard title="Pending Approvals" value={pendingApprovals} />
+          <StatsCard title="Users" value={userCount} href="/users" />
+          <StatsCard title="Complexes" value={complexCount} href="/complexes" />
+          <StatsCard title="Units" value={unitCount} href="/units" />
+          <StatsCard title="Pending Approvals" value={pendingApprovals} href="/approvals" />
         </div>
         <div className="flex items-center gap-2">
           <Button variant={filter==='all'?undefined:'ghost'} onClick={()=>setFilter('all')}>All</Button>
@@ -168,4 +168,3 @@ export default function Page() {
     </Shell>
   )
 }
-
