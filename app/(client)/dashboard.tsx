@@ -31,6 +31,8 @@ export default function Dashboard() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [nextAutopay, setNextAutopay] = useState<string | null>(null);
   const [showPayAll, setShowPayAll] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function Dashboard() {
           .limit(100),
         supabase
           .from('units')
-          .select('id, name, service_fee, autopay_enabled')
+          .select('id, name, service_fee, autopay_enabled, autopay_day')
           .eq('user_id', uid),
       ]);
 
@@ -93,6 +95,28 @@ export default function Dashboard() {
       } else {
         setPayments([]);
       }
+      // Wallet balance
+      try {
+        const API = (await import('../../lib/config')).API_BASE;
+        const { data: session } = await supabase.auth.getSession();
+        const token = session.session?.access_token;
+        const r = await fetch(`${API}/payments/wallet/balance`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+        const d = await r.json();
+        if (d?.ok) setWalletBalance(Number(d.balance || 0));
+      } catch {}
+      // Autopay preview (earliest next date among units with autopay)
+      try {
+        const now = new Date();
+        const days = ((unitsRes.data as any[])||[])
+          .filter((u:any)=>u.autopay_enabled && u.autopay_day)
+          .map((u:any)=>Number(u.autopay_day))
+          .filter((n:number)=>Number.isFinite(n) && n>=1 && n<=28);
+        if (days.length) {
+          const nexts = days.map((d:number)=>{ const n = new Date(); n.setDate(1); n.setMonth(now.getDate()<=d ? now.getMonth() : now.getMonth()+1); n.setDate(d); return n; });
+          nexts.sort((a,b)=>a.getTime()-b.getTime());
+          setNextAutopay(nexts[0].toDateString());
+        } else setNextAutopay(null);
+      } catch {}
     } finally {
       setRefreshing(false);
     }
@@ -170,6 +194,32 @@ export default function Dashboard() {
 
         {/* Summary */}
         <MoneySummary buckets={buckets} />
+        {walletBalance > 0 ? (
+          <Card>
+            <View style={{ flexDirection: isRTL ? 'row-reverse':'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontWeight: '600' }}>Wallet: {Number(walletBalance).toLocaleString()} IQD</Text>
+              <TouchableOpacity onPress={async () => {
+                try {
+                  const API = (await import('../../lib/config')).API_BASE;
+                  const { data: session } = await supabase.auth.getSession();
+                  const token = session.session?.access_token;
+                  const r = await fetch(`${API}/payments/wallet/apply`, { method: 'POST', headers: { 'content-type':'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({}) });
+                  const d = await r.json();
+                  if (d?.ok) { toast.show('Wallet applied'); await loadAll(); }
+                  else toast.show(d?.error || 'Failed');
+                } catch (e:any) { toast.show(e?.message || 'Error'); }
+              }} style={{ backgroundColor:'#111827', paddingHorizontal:12, paddingVertical:8, borderRadius:10 }}>
+                <Text style={{ color:'white', fontWeight:'700' }}>Apply to dues</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        ) : null}
+        {nextAutopay ? (
+          <Card>
+            <Text style={{ color:'#6B7280' }}>Next Autopay</Text>
+            <Text style={{ fontWeight:'700' }}>{nextAutopay}</Text>
+          </Card>
+        ) : null}
 
         {/* Quick actions */}
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12 }}>

@@ -285,3 +285,52 @@ router.post('/autopay/set', requireUser, async (req: AuthenticatedRequest, res) 
     res.status(500).json({ ok: false, error: e?.message || 'internal error' });
   }
 });
+router.get('/wallet/balance', requireUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { data } = await supabase.from('wallets').select('balance').eq('user_id', req.user!.id).maybeSingle();
+    res.json({ ok: true, balance: Number((data as any)?.balance || 0) });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
+
+router.post('/wallet/apply', requireUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { unitId } = req.body ?? {};
+    const { data: w } = await supabase.from('wallets').select('balance').eq('user_id', req.user!.id).maybeSingle();
+    let remaining = Number((w as any)?.balance || 0);
+    if (remaining <= 0) return res.json({ ok: true, applied: 0, remaining });
+
+    // Find unpaid dues for user's units
+    const { data: units } = await supabase.from('units').select('id').eq('user_id', req.user!.id);
+    const unitIds = (units as any[] || []).map((u:any)=>u.id as number).filter(Boolean);
+    if (!unitIds.length) return res.json({ ok: true, applied: 0, remaining });
+    const inScope = Array.isArray(unitId) ? unitId : unitId ? [Number(unitId)] : unitIds;
+
+    const dues: Array<{ kind:'installment'|'service_fee'; id:number; unit_id:number; amount:number; due: string }>= [];
+    const [inst, fees] = await Promise.all([
+      supabase.from('installments').select('id, unit_id, amount_iqd, due_date, paid').in('unit_id', inScope).eq('paid', false).order('due_date'),
+      supabase.from('service_fees').select('id, unit_id, amount_iqd, due_date, paid').in('unit_id', inScope).eq('paid', false).order('due_date')
+    ]);
+    (inst.data||[]).forEach((r:any)=>dues.push({ kind:'installment', id:r.id, unit_id:r.unit_id, amount: Number(r.amount_iqd), due: r.due_date }));
+    (fees.data||[]).forEach((r:any)=>dues.push({ kind:'service_fee', id:r.id, unit_id:r.unit_id, amount: Number(r.amount_iqd), due: r.due_date }));
+    dues.sort((a,b)=>new Date(a.due).getTime()-new Date(b.due).getTime());
+
+    let applied = 0;
+    for (const d of dues) {
+      if (remaining <= 0) break;
+      if (d.amount <= remaining) {
+        // apply full
+        await supabase.from('payments').insert({ unit_id: d.unit_id, amount: d.amount, status: 'paid', paid_at: new Date().toISOString(), ...(d.kind==='installment'?{ installment_id: d.id }:{ service_fee_id: d.id }) } as any);
+        if (d.kind==='installment') await supabase.from('installments').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', d.id);
+        else await supabase.from('service_fees').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', d.id);
+        await supabase.from('wallet_transactions').insert({ user_id: req.user!.id, amount: -d.amount, kind: 'apply', ref: `${d.kind}:${d.id}` });
+        remaining -= d.amount; applied += d.amount;
+      }
+    }
+    await supabase.from('wallets').upsert({ user_id: req.user!.id, balance: remaining });
+    res.json({ ok: true, applied, remaining });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});

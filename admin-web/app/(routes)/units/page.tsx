@@ -41,14 +41,33 @@ export default function UnitsPage() {
   async function fetchAll(p: number) {
     setLoading(true);
     const from = p * pageSize; const to = from + pageSize - 1;
-    const [{ data: units }, { data: compl }, { data: clientRows }] = await Promise.all([
-      supabase.from('units').select('id, name, complex_id, user_id, autopay_enabled, complexes(name), profiles(email)').order('name').range(from, to),
+    const [{ data: units }, { data: compl }, { data: clientRoles }] = await Promise.all([
+      supabase.from('units').select('id, name, complex_id, user_id, autopay_enabled').order('name').range(from, to),
       supabase.from('complexes').select('id, name').order('name'),
-      supabase.from('user_roles').select('user_id, role, profiles(email, full_name)').eq('role','client').order('profiles(email)')
+      supabase.from('user_roles').select('user_id, role').eq('role','client')
     ]);
-    setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: u.complexes?.name as string | undefined, user_id: (u.user_id as string|undefined)|| null, owner: (u.profiles?.email as string|undefined)|| null, autopay: !!u.autopay_enabled })));
+    // Build maps to avoid FK/Nested select requirements
+    const complexMap = new Map<number, string>();
+    ((compl as any[])||[]).forEach((c:any)=>complexMap.set(c.id, c.name));
+    const userIds = Array.from(new Set(((units as any[])||[]).map((u:any)=>u.user_id).filter(Boolean)));
+    const { data: profs } = await supabase.from('profiles').select('user_id, email, full_name').in('user_id', userIds.length?userIds:['00000000-0000-0000-0000-000000000000']);
+    const profileMap = new Map<string, { email?: string|null; full_name?: string|null }>();
+    ((profs as any[])||[]).forEach((p:any)=>profileMap.set(p.user_id, { email: p.email, full_name: p.full_name }));
+
+    setRows(((units as any[]) || []).map(u => ({
+      id: u.id as number,
+      name: u.name as string,
+      complex_id: u.complex_id as number,
+      complex: complexMap.get(u.complex_id) || undefined,
+      user_id: (u.user_id as string|undefined)|| null,
+      owner: (u.user_id ? (profileMap.get(u.user_id)?.email || profileMap.get(u.user_id)?.full_name || null) : null) as any,
+      autopay: !!u.autopay_enabled,
+    })));
     setComplexes((compl as any[]) as Complex[] || []);
-    setClients(((clientRows as any[]) || []).map(r => ({ id: r.user_id as string, email: r.profiles?.email as string | undefined, name: r.profiles?.full_name as string | undefined })) as Client[]);
+    // Clients map
+    const clientIds = ((clientRoles as any[])||[]).map((r:any)=>r.user_id);
+    const { data: clientProfs } = await supabase.from('profiles').select('user_id, email, full_name').in('user_id', clientIds.length?clientIds:['00000000-0000-0000-0000-000000000000']);
+    setClients(((clientProfs as any[])||[]).map((p:any)=>({ id: p.user_id as string, email: p.email as string|undefined, name: p.full_name as string|undefined })) as Client[]);
     setHasMore((((units as any[]) || []).length) === pageSize);
     setLoading(false);
   }

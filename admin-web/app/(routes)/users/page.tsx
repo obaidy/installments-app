@@ -30,10 +30,14 @@ export default function UsersPage() {
     const to = from + pageSize - 1;
     const { data } = await supabase
       .from('user_roles')
-      .select('user_id, role, profiles(email, full_name)')
+      .select('user_id, role')
       .order('role')
       .range(from, to);
-    const list = ((data as any[]) || []).map(r => ({ id: r.user_id as string, role: r.role as Role, email: r.profiles?.email as string | undefined, name: r.profiles?.full_name as string | undefined }));
+    const ids = Array.from(new Set(((data as any[])||[]).map((r:any)=>r.user_id)));
+    const { data: profs } = await supabase.from('profiles').select('user_id, email, full_name').in('user_id', ids.length?ids:['00000000-0000-0000-0000-000000000000']);
+    const pmap = new Map<string, {email?:string|null; full_name?:string|null}>();
+    ((profs as any[])||[]).forEach((p:any)=>pmap.set(p.user_id, { email: p.email, full_name: p.full_name }));
+    const list = ((data as any[]) || []).map(r => ({ id: r.user_id as string, role: r.role as Role, email: pmap.get(r.user_id)?.email as string | undefined, name: pmap.get(r.user_id)?.full_name as string | undefined }));
     setRows(list);
     setHasMore(list.length === pageSize);
     setLoading(false);
@@ -172,4 +176,3 @@ function InviteButton({ onInvited }: { onInvited: () => void }) {
     </>
   );
 }
-
