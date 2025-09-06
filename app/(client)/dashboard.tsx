@@ -2,7 +2,7 @@ import { View, Text, FlatList, SafeAreaView, ScrollView, RefreshControl, Touchab
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import MoneySummary, { type MoneyBuckets } from '../../components/MoneySummary';
 import InstallmentCard, { type Installment } from '../../components/InstallmentCard';
-import { createCheckout } from '../../lib/api/payments';
+import { createCheckout, createBatchCheckout } from '../../lib/api/payments';
 import { supabase, signOut } from '../../lib/supabaseClient';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../../components/ThemedText';
@@ -100,6 +100,17 @@ export default function Dashboard() {
 
   const handlePay = useCallback(
     async (i: Installment) => {
+      // Biometric Quick Pay (optional)
+      try {
+        const LocalAuthentication = await import('expo-local-authentication');
+        const avail = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = avail ? await LocalAuthentication.isEnrolledAsync() : false;
+        if (enrolled) {
+          const res = await LocalAuthentication.authenticateAsync({ promptMessage: 'Confirm Payment' });
+          if (!res.success) return;
+        }
+      } catch {}
+
       const metadata: Record<string, string> = {
         unit_id: String(i.unit_id),
       };
@@ -121,11 +132,10 @@ export default function Dashboard() {
     [router],
   );
 
+  const [coachTarget, setCoachTarget] = useState<Installment | null>(null);
   const handlePromise = useCallback(async (i: Installment) => {
-    // Promise within 7 days by default
-    const promiseDate = new Date();
-    promiseDate.setDate(promiseDate.getDate() + 7);
-    await supabase.from('promises').insert({ user_id: (await supabase.auth.getUser()).data.user?.id, target_type: i.type ?? 'installment', target_id: i.id, promise_date: promiseDate.toISOString().slice(0,10) });
+    // Open Smart Promise Coach
+    setCoachTarget(i);
   }, []);
 
   const handlePayAll = useCallback(() => {
@@ -271,23 +281,27 @@ export default function Dashboard() {
         items={items.filter(i => !(i.paid || i.paid_at))}
         onConfirm={async (targets) => {
           setShowPayAll(false);
-          for (let idx = 0; idx < targets.length; idx++) {
-            const i = targets[idx] as Installment;
-            try {
-              const { referenceId } = await createCheckout(
-                i.amount_iqd,
-                i.type === 'service_fee' ? `Service Fee ${i.id}` : `Installment ${i.id}`,
-                { unit_id: String(i.unit_id) },
-                { type: i.type ?? 'installment', id: i.id }
-              );
-              if (idx === 0 && referenceId) {
-                router.push(`/(client)/units/payments/${encodeURIComponent(referenceId)}`);
-              }
-            } catch (e: any) {
-              toast.show(e?.message || 'Error');
-              break;
-            }
+          try {
+            const unitId = targets[0]?.unit_id as number;
+            const items = targets.map((x) => ({ type: (x.type ?? 'installment') as 'installment'|'service_fee', id: x.id }));
+            const { referenceId } = await createBatchCheckout(unitId, items);
+            if (referenceId) router.push(`/(client)/units/payments/${encodeURIComponent(referenceId)}`);
+          } catch (e: any) {
+            toast.show(e?.message || 'Error');
           }
+        }}
+      />
+
+      {/* Smart Promise Coach */}
+      <PromiseCoachModal
+        target={coachTarget}
+        onClose={() => setCoachTarget(null)}
+        onSelect={async (date) => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user || !coachTarget) return;
+          await supabase.from('promises').insert({ user_id: user.id, target_type: coachTarget.type ?? 'installment', target_id: coachTarget.id, promise_date: date.toISOString().slice(0,10) });
+          setCoachTarget(null);
+          toast.show('Promise saved');
         }}
       />
     </SafeAreaView>
@@ -299,6 +313,33 @@ function Card({ children }: { children: React.ReactNode }) {
     <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}>
       {children}
     </View>
+  );
+}
+
+function PromiseCoachModal({ target, onClose, onSelect }: { target: Installment | null; onClose: () => void; onSelect: (date: Date) => void }) {
+  const { t } = useTranslation();
+  if (!target) return null as any;
+  // Heuristics: suggest this Friday, next 5th, or in 7 days
+  const now = new Date();
+  const in7 = new Date(now); in7.setDate(in7.getDate() + 7);
+  const thisFriday = (() => { const d = new Date(now); const day = d.getDay(); const diff = (5 - day + 7) % 7; d.setDate(d.getDate() + (diff === 0 ? 7 : diff)); return d; })();
+  const next5th = (() => { const d = new Date(now); if (d.getDate() >= 5) { d.setMonth(d.getMonth() + 1); } d.setDate(5); return d; })();
+  const options = [thisFriday, next5th, in7];
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', padding: 24, justifyContent: 'center' }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Smart Promise Coach</Text>
+          {options.map((d, idx) => (
+            <TouchableOpacity key={idx} onPress={() => onSelect(d)} style={{ paddingVertical: 10 }}>
+              <Text>{d.toDateString()}</Text>
+            </TouchableOpacity>
+          ))}
+          <View style={{ height: 12 }} />
+          <TouchableOpacity onPress={onClose} style={{ alignSelf: 'flex-end' }}><Text style={{ color: '#111827', fontWeight: '700' }}>{t('cancel')}</Text></TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 

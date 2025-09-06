@@ -40,3 +40,17 @@ const r = await fetch(`${API_BASE}/payments/status/${referenceId}`);
 const d = await r.json();
 return d.status as 'pending' | 'paid' | 'failed' | 'cancelled';
 }
+
+export async function createBatchCheckout(
+  unitId: number,
+  items: Array<{ type: 'installment' | 'service_fee'; id: number }> ,
+  email?: string,
+) {
+  const r = await fetch(`${API_BASE}/payments/checkout-batch`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ unitId, items, email }),
+  });
+  const d = await r.json();
+  if (!r.ok || !d?.ok) throw new Error(d?.error || 'Batch payment error');
+  return d as { ok: true; referenceId: string };
+}

@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { createOrRetrieveCustomer, storeCard, chargeCustomer, stripe, attachDefaultPaymentMethod } from '../../lib/stripeClient';
 import { supabase } from '../../lib/supabaseServiceClient';
 import { optionalUser, requireUser, type AuthenticatedRequest } from '../middleware/auth';
+import crypto from 'node:crypto';
 
 const router = Router();
 
@@ -75,13 +76,129 @@ router.post('/checkout', optionalUser, async (req: AuthenticatedRequest, res) =>
       }
     }
 
-    res.json({ status: intent.status, client_secret: intent.client_secret });
+    res.json({ ok: true, status: intent.status, client_secret: intent.client_secret, referenceId: intent.id });
   } catch (e: any) {
     res.status(500).json({ error: e?.message ?? 'internal error' });
   }
 });
 
 export default router;
+
+/**
+ * GET /payments/status/:ref
+ */
+router.get('/status/:ref', async (req, res) => {
+  try {
+    const ref = req.params.ref;
+    if (!ref) return res.status(400).json({ error: 'ref required' });
+    const pi: Stripe.PaymentIntent = await (await import('../../lib/stripeClient')).stripe.paymentIntents.retrieve(ref);
+    let status: 'pending'|'paid'|'failed'|'cancelled' = 'pending';
+    if (pi.status === 'succeeded') status = 'paid';
+    else if (pi.status === 'canceled') status = 'cancelled';
+    else if (pi.status === 'requires_payment_method' || pi.status === 'requires_confirmation' || pi.status === 'processing') status = 'pending';
+    else if (pi.status === 'requires_action') status = 'pending';
+    else status = 'failed';
+    res.json({ status });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || 'internal error' });
+  }
+});
+
+/**
+ * POST /payments/checkout-batch
+ * Body: { unitId: number, items: Array<{ type: 'installment'|'service_fee'; id: number }>, email?: string }
+ */
+router.post('/checkout-batch', optionalUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { unitId, items = [], email: emailRaw } = req.body ?? {};
+    if (!unitId || !Array.isArray(items) || items.length === 0) return res.status(400).json({ ok: false, error: 'unitId and items required' });
+
+    // Sum amounts and load targets
+    let total = 0;
+    const rows: Array<{ type: 'installment'|'service_fee'; id: number; amount: number }> = [];
+    for (const it of items) {
+      if (!it?.type || !it?.id) continue;
+      if (it.type === 'installment') {
+        const { data } = await supabase.from('installments').select('amount_iqd').eq('id', Number(it.id)).single();
+        const amt = Number((data as any)?.amount_iqd || 0);
+        rows.push({ type: 'installment', id: Number(it.id), amount: amt }); total += amt;
+      } else {
+        const { data } = await supabase.from('service_fees').select('amount_iqd').eq('id', Number(it.id)).single();
+        const amt = Number((data as any)?.amount_iqd || 0);
+        rows.push({ type: 'service_fee', id: Number(it.id), amount: amt }); total += amt;
+      }
+    }
+    if (rows.length === 0 || total <= 0) return res.status(400).json({ ok: false, error: 'No items with amounts' });
+
+    const email = (emailRaw as string) || req.user?.email || '';
+    if (!email) return res.status(400).json({ ok: false, error: 'email required' });
+
+    const customer = await createOrRetrieveCustomer(email);
+    const intent = await chargeCustomer(customer.id, Math.round(total * 100), { unit_id: String(unitId), batch: '1' } as any);
+
+    // Record items to payment_intents for webhook reconciliation
+    for (const r of rows) {
+      await supabase.from('payment_intents').insert({ unit_id: Number(unitId), target_type: r.type, target_id: r.id, amount: r.amount, provider: 'stripe', provider_ref: intent.id, status: intent.status as any });
+    }
+
+    if (intent.status === 'succeeded') {
+      // Mirror immediately
+      for (const r of rows) {
+        await supabase.from('payments').insert({ unit_id: Number(unitId), amount: r.amount, status: 'paid', paid_at: new Date().toISOString(), ...(r.type === 'installment' ? { installment_id: r.id } : { service_fee_id: r.id }) } as any);
+        if (r.type === 'installment') await supabase.from('installments').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', r.id);
+        else await supabase.from('service_fees').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', r.id);
+      }
+    }
+
+    res.json({ ok: true, referenceId: intent.id });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
+
+/**
+ * Family/Friend payer link endpoints
+ */
+router.post('/paylink/create', requireUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { unit_id, target_type, target_id, amount, expires_in_minutes = 60 } = req.body ?? {};
+    if (!unit_id || !target_type) return res.status(400).json({ ok: false, error: 'unit_id and target_type required' });
+    const token = crypto.randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + Number(expires_in_minutes) * 60_000).toISOString();
+    await supabase.from('paylinks').insert({ token, unit_id: Number(unit_id), target_type, target_id: target_id ? Number(target_id) : null, amount: amount ? Number(amount) : null, expires_at: expiresAt, created_by: req.user?.id ?? null } as any);
+    res.json({ ok: true, token, url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'}/pay/${token}` });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
+
+router.get('/paylink/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const { data } = await supabase.from('paylinks').select('*').eq('token', token).maybeSingle();
+    if (!data) return res.status(404).json({ ok: false, error: 'not found' });
+    if (data.expires_at && new Date(data.expires_at) < new Date()) return res.status(410).json({ ok: false, error: 'expired' });
+    res.json({ ok: true, data });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
+
+/**
+ * Simple receipt endpoint
+ */
+router.get('/receipt/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { data } = await supabase.from('payments').select('id, unit_id, installment_id, service_fee_id, amount, status, paid_at').eq('id', id).maybeSingle();
+    if (!data) return res.status(404).json({ ok: false, error: 'not found' });
+    // naive signature for demo
+    const sig = crypto.createHash('sha256').update(String(data.id) + '|' + String(data.amount)).digest('hex').slice(0, 16);
+    res.json({ ok: true, receipt: data, verify: sig });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || 'internal error' });
+  }
+});
 /** PM + Autopay helper routes (Stripe) */
 router.post('/pm/setup-intent', requireUser, async (req: AuthenticatedRequest, res) => {
   try {

@@ -1,17 +1,36 @@
-// Metro configuration for Expo + workspaces
-// Ensures symlinked packages (like packages/tokens) are resolved and watched
+// metro.config.js
+// Safe config for Expo + (optional) workspaces. Avoids custom serializer tweaks
+// that can cause "path.relative(..., undefined)" crashes, and only enables
+// symlink/workspace support if a `packages/` directory actually exists.
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
+const fs = require('fs');
 
-const projectRoot = __dirname;
-const config = getDefaultConfig(projectRoot);
+module.exports = (() => {
+  const projectRoot = __dirname;
+  const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [
-  path.resolve(projectRoot, 'packages'),
-];
+  // Only add workspace settings if ./packages exists
+  const packagesDir = path.resolve(projectRoot, 'packages');
+  if (fs.existsSync(packagesDir)) {
+    config.watchFolders = [...(config.watchFolders || []), packagesDir];
+    config.resolver.unstable_enableSymlinks = true;
+    config.resolver.unstable_enablePackageExports = true;
+  } else {
+    // If you don't have a monorepo, don't enable these
+    if (config.resolver) {
+      delete config.resolver.unstable_enableSymlinks;
+      delete config.resolver.unstable_enablePackageExports;
+    }
+  }
 
-config.resolver.unstable_enableSymlinks = true;
-config.resolver.unstable_enablePackageExports = true;
+  // Keep Metro serializer/transformer defaults (custom ones often cause undefined paths)
+  if (config.serializer) {
+    delete config.serializer.getModulesRunBeforeMainModule;
+    delete config.serializer.createModuleIdFactory;
+  }
+  delete config.transformer?.getTransformOptions;
 
-module.exports = config;
-
+  return config;
+})();

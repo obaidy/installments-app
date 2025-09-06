@@ -70,6 +70,32 @@ app.post(
             }
           }
         }
+
+        // Also reconcile any rows we've staged in payment_intents (batch handling)
+        try {
+          const { data: staged } = await supabase
+            .from('payment_intents')
+            .select('unit_id, target_type, target_id, amount')
+            .eq('provider_ref', intent.id);
+          if (staged && staged.length) {
+            for (const r of staged as any[]) {
+              await supabase.from('payments').upsert({
+                unit_id: Number(r.unit_id),
+                amount: Number(r.amount),
+                status: intent.status as any,
+                paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+                ...(r.target_type === 'installment' ? { installment_id: Number(r.target_id) } : { service_fee_id: Number(r.target_id) }),
+              } as any);
+              if (intent.status === 'succeeded') {
+                if (r.target_type === 'installment') {
+                  await supabase.from('installments').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', Number(r.target_id));
+                } else {
+                  await supabase.from('service_fees').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', Number(r.target_id));
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
 
       return res.json({ received: true });

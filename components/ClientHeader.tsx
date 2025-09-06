@@ -5,12 +5,14 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '../lib/supabaseClient';
 import { setAppLanguage, type AppLanguage } from '../lib/i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ClientHeader({ title }: { title?: string }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const isRTL = I18nManager.isRTL;
+  const insets = useSafeAreaInsets();
 
   const Item = ({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) => (
     <TouchableOpacity onPress={() => { setOpen(false); onPress(); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>
@@ -24,7 +26,7 @@ export default function ClientHeader({ title }: { title?: string }) {
   }
 
   return (
-    <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white' }}>
       <TouchableOpacity onPress={() => setOpen(true)} accessibilityLabel="menu">
         <Ionicons name="menu-outline" size={26} color="#111827" />
       </TouchableOpacity>
@@ -34,7 +36,7 @@ export default function ClientHeader({ title }: { title?: string }) {
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={{ position: 'absolute', top: 0, bottom: 0, left: isRTL ? undefined : 0, right: isRTL ? 0 : undefined, width: '78%', backgroundColor: 'white', padding: 16, gap: 10 }}>
+          <View style={{ position: 'absolute', top: 0, bottom: 0, left: isRTL ? undefined : 0, right: isRTL ? 0 : undefined, width: '78%', backgroundColor: 'white', paddingTop: insets.top + 10, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 6 }}>{t('dashboard')}</Text>
             <Item icon="home-outline" label={t('dashboard')} onPress={() => router.replace('/(client)/dashboard')} />
             <Item icon="card-outline" label={t('paymentMethods')} onPress={() => router.push('/(client)/payment-methods')} />

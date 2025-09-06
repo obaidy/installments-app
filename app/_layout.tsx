@@ -9,6 +9,7 @@ import { ToastProvider } from '../components/Toast';
 import { fonts } from '../constants/design';
 import QueryProvider from './_providers/QueryProvider';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 // Initialize i18n at app start
 import '../lib/i18n';
 
@@ -32,16 +33,18 @@ export default function RootLayout() {
     <QueryProvider>
       <ToastProvider>
         <StripeProvider publishableKey={String(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')}>
+          <SafeAreaProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack initialRouteName="index">
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+            <Stack initialRouteName="index" screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="dashboard" />
               {/* Removed old tabs group for unified client UX */}
               {/* Group routes don't need explicit Stack.Screen entries */}
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>
+          </SafeAreaProvider>
         </StripeProvider>
       </ToastProvider>
     </QueryProvider>
