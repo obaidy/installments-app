@@ -41,10 +41,15 @@ export default function UnitsPage() {
   async function fetchAll(p: number) {
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/units/list?page=${p}&pageSize=${pageSize}`, { credentials: 'include' });
+      // Always fetch complexes for selector first
+      const { data: compl } = await supabase.from('complexes').select('id, name').order('name');
+      setComplexes(((compl as any[]) || []) as Complex[]);
+
+      // Fetch units via server route (service role) to bypass any RLS quirks
+      const r = await fetch(`/api/admin/units?page=${p}&pageSize=${pageSize}`, { credentials: 'include' });
       const d = await r.json();
       if (!r.ok || !d?.ok) throw new Error(d?.error || 'fetch failed');
-      const rows = (d.rows as any[]).map((u:any) => ({
+      const rows = (d.data as any[]).map((u:any) => ({
         id: u.id as number,
         name: u.name as string,
         complex_id: u.complex_id as number,
@@ -55,8 +60,16 @@ export default function UnitsPage() {
       }));
       setRows(rows);
       setHasMore(rows.length === pageSize);
+
+      // Clients for Assign Owner via server (service role)
+      try {
+        const cr = await fetch('/api/admin/clients', { credentials: 'include' });
+        const cj = await cr.json();
+        if (cr.ok && cj?.ok) setClients(cj.data as any[]);
+        else setClients([]);
+      } catch { setClients([]); }
     } catch (e) {
-      // fallback client-side (best effort)
+      // Final fallback: client-side units fetch
       const from = p * pageSize; const to = from + pageSize - 1;
       const [{ data: units }, { data: compl }] = await Promise.all([
         supabase.from('units').select('id, name, complex_id, user_id, autopay_enabled').order('name').range(from, to),
@@ -64,10 +77,18 @@ export default function UnitsPage() {
       ]);
       const complexMap = new Map<number, string>();
       ((compl as any[])||[]).forEach((c:any)=>complexMap.set(c.id, c.name));
+      setComplexes(((compl as any[]) || []) as Complex[]);
       setRows(((units as any[]) || []).map(u => ({ id: u.id as number, name: u.name as string, complex_id: u.complex_id as number, complex: complexMap.get(u.complex_id) || undefined, user_id: (u.user_id as string|undefined)|| null, owner: null, autopay: !!u.autopay_enabled })));
       setHasMore((((units as any[]) || []).length) === pageSize);
+      // Attempt server-side clients list as fallback, too
+      try {
+        const cr = await fetch('/api/admin/clients', { credentials: 'include' });
+        const cj = await cr.json();
+        if (cr.ok && cj?.ok) setClients(cj.data as any[]);
+      } catch {}
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const filtered = useMemo(() => {

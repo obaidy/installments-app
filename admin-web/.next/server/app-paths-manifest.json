@@ -1,7 +1,14 @@
 {
   "/(routes)/units/page": "app/(routes)/units/page.js",
-  "/api/admin/units/list/route": "app/api/admin/units/list/route.js",
-  "/(routes)/users/page": "app/(routes)/users/page.js",
   "/page": "app/page.js",
+  "/api/admin/clients/route": "app/api/admin/clients/route.js",
+  "/api/admin/units/route": "app/api/admin/units/route.js",
+  "/approvals/page": "app/approvals/page.js",
+  "/(routes)/payments/page": "app/(routes)/payments/page.js",
+  "/(routes)/installments/page": "app/(routes)/installments/page.js",
+  "/(routes)/complexes/page": "app/(routes)/complexes/page.js",
+  "/(routes)/service-fees/page": "app/(routes)/service-fees/page.js",
+  "/reconciliation/page": "app/reconciliation/page.js",
+  "/(routes)/users/page": "app/(routes)/users/page.js",
   "/auth/login/page": "app/auth/login/page.js"
 }
