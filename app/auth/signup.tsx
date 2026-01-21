@@ -49,7 +49,6 @@ export default function SignupScreen() {
       try { await supabase.from('profiles').upsert({ user_id: userId, email }); } catch {}
       // Create client-complex pending rows for manager approval
       for (const complexId of ids) {
-        await supabase.from('user_complexes').insert({ user_id: userId, complex_id: complexId });
         try {
           const r = await supabase.from('client_complex_status').upsert({ user_id: userId, complex_id: complexId, status: 'pending' });
           const linkError = (r as any)?.error ?? null;
@@ -165,7 +164,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-
 
 
 

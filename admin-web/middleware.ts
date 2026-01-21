@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
@@ -13,7 +16,19 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   // This both reads AND refreshes Supabase session cookies for all routes (pages + API)
-  const supabase = createMiddlewareClient({ req, res });
+  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookies: {
+      get(name) {
+        return req.cookies.get(name)?.value;
+      },
+      set(name, value, options) {
+        res.cookies.set({ name, value, ...options });
+      },
+      remove(name, options) {
+        res.cookies.set({ name, value: '', ...options, maxAge: 0 });
+      },
+    },
+  });
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session && !isPublic) {

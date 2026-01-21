@@ -12,6 +12,7 @@ const supabaseAdmin = createClient(
 
 export interface AuthenticatedRequest extends Request {
   user?: User;
+  accessToken?: string;
 }
 
 function getAccessToken(req: Request): string | null {
@@ -32,6 +33,7 @@ export async function optionalUser(
     if (token) {
       const { data: { user } } = await supabaseAdmin.auth.getUser(token);
       if (user) req.user = user;
+      req.accessToken = token;
     }
   } catch (_) {}
   next();
@@ -50,6 +52,7 @@ export async function requireUser(
   if (error || !user) return res.status(401).json({ error: 'UNAUTHORIZED' });
 
   req.user = user;
+  req.accessToken = token;
   next();
 }
 

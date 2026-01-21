@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { getStripeCurrency, toStripeMinor } from "../../lib/payments/currency";
 
 
 export type PaymentIntentPayload = {
@@ -24,11 +25,10 @@ const stripe = new Stripe(secretKey, { apiVersion: "2024-06-20" as any });
 
 return {
 async createIntent(p) {
-// For testing we use USD cents; when moving to IQD in Stripe (if supported), adjust mapping
-const cents = Math.round((p.amountIQD || 0) * 100);
+const cents = toStripeMinor(p.amountIQD || 0);
 const pi = await stripe.paymentIntents.create({
   amount: cents,
-  currency: "usd",
+  currency: getStripeCurrency(),
   description: p.description,
   metadata: p.metadata,
   automatic_payment_methods: { enabled: true },

@@ -3,6 +3,8 @@ import type Stripe from 'stripe';
 import { stripe } from '../../lib/stripeClient';
 import { supabase } from '../../lib/supabaseServiceClient';
 import { requireAdmin } from '../middleware/auth';
+import { fromStripeMinor } from '../../lib/payments/currency';
+import { stripeIntentStatusToPaymentStatus } from '../../lib/payments/status';
 
 const router = Router();
 
@@ -18,21 +20,22 @@ router.post('/by-intent', requireAdmin, async (req, res) => {
 
     const unitId = Number(unit_id ?? pi.metadata?.unit_id ?? 0) || null;
     const instId = Number(installment_id ?? pi.metadata?.installment_id ?? 0) || null;
-    const amount = (pi.amount_received || pi.amount || 0) / 100;
+    const amount = fromStripeMinor(pi.amount_received || pi.amount || 0);
+    const status = stripeIntentStatusToPaymentStatus(pi.status);
 
     if (!unitId || !instId) {
       return res.status(400).json({ error: 'unit_id / installment_id missing (metadata or body)' });
     }
 
-    await supabase.from('payments').upsert({
+    await supabase.from('payments').insert({
       unit_id: unitId,
       installment_id: instId,
       amount,
-      status: pi.status as any,
-      paid_at: pi.status === 'succeeded' ? new Date().toISOString() : null,
-    }, { onConflict: 'unit_id,installment_id' } as any);
+      status,
+      paid_at: status === 'paid' ? new Date().toISOString() : null,
+    });
 
-    if (pi.status === 'succeeded') {
+    if (status === 'paid') {
       await supabase
         .from('installments')
         .update({ paid: true, paid_at: new Date().toISOString() })

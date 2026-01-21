@@ -30,11 +30,17 @@ export default function ClientPaymentMethods() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
+    const { data: approved } = await supabase
+      .from('client_complex_status')
+      .select('complex_id')
+      .eq('user_id', user.id)
+      .eq('status', 'approved');
+    const approvedIds = ((approved as any[]) || []).map((r:any) => r.complex_id).filter(Boolean);
     const { data: units } = await supabase
       .from('units')
-      .select('id, complex_id, client_complex_status!inner(status), autopay_enabled')
+      .select('id, complex_id, autopay_enabled')
       .eq('user_id', user.id)
-      .eq('client_complex_status.status', 'approved')
+      .in('complex_id', approvedIds.length ? approvedIds : ['-1'])
       .limit(1);
     const id = (units as any[])?.[0]?.id as number | undefined;
     if (!id) { setLoading(false); return; }

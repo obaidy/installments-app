@@ -62,7 +62,7 @@ describe('SignupScreen', () => {
 
     (supabase as any).from = jest.fn((table: string) => {
       if (table === 'complexes') return { select: selectMock };
-      if (table === 'user_complexes') return { insert: insertMock };
+      if (table === 'client_complex_status') return { insert: insertMock, upsert: insertMock };
       return {} as any;
     });
   });
@@ -85,8 +85,8 @@ describe('SignupScreen', () => {
         'secret',
       );
       expect(inMock).toHaveBeenCalledWith('code', ['ABC', 'DEF']);
-      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 1 });
-      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 2 });
+      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 1, status: 'pending' });
+      expect(insertMock).toHaveBeenCalledWith({ user_id: '1', complex_id: 2, status: 'pending' });
     });
   });
 

@@ -62,7 +62,7 @@ Scheduled charges: `npm run schedule-charges` charges due installments and marks
 
 ## Supabase Schema
 
-This app expects tables for `user_roles`, `user_complexes`, `complexes`, `units`, `installments`, `service_fees`, `payments`, and optionally `subscriptions` with appropriate foreign keys and RLS.
+This app expects tables for `user_roles`, `client_complex_status`, `complexes`, `units`, `installments`, `service_fees`, `payments`, and optionally `subscriptions` with appropriate foreign keys and RLS.
 
 Note: SQL files are not included in this repo. Create the schema and RLS policies in your Supabase project following the table names above. If you previously created older versions, drop or migrate them before applying an updated schema.
 

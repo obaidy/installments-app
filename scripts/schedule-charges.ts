@@ -32,7 +32,7 @@ export async function main() {
     try {
       const intent = await chargeCustomer(
         customerId,
-        Math.round(amount * 100),
+        amount,
         { unit_id: inst.unit_id, installment_id: inst.id },
       );
 

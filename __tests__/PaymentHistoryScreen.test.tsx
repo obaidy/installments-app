@@ -14,11 +14,18 @@ describe('PaymentHistoryScreen', () => {
       getUser: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
     };
     (supabase as any).from = jest.fn((table: string) => {
+      if (table === 'client_complex_status') {
+        const q: any = { select: jest.fn().mockReturnThis() };
+        q.eq = jest
+          .fn()
+          .mockImplementationOnce(() => q)
+          .mockImplementationOnce(() => Promise.resolve({ data: [{ complex_id: 7 }], error: null }));
+        return q;
+      }
       if (table === 'units') {
-        return {
-          select: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockResolvedValue({ data: [{ id: 10 }], error: null }),
-        };
+        const q: any = { select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis() };
+        q.in = jest.fn().mockResolvedValue({ data: [{ id: 10 }], error: null });
+        return q;
       }
       if (table === 'payments') {
         return {

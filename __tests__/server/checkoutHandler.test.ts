@@ -10,14 +10,9 @@ jest.mock('../../lib/stripeClient', () => ({
   stripe: { webhooks: { constructEvent: jest.fn() } },
 }));
 
-jest.mock('../../lib/supabaseClient', () => ({
-  supabase: { from: jest.fn() },
-}));
-
 describe('POST /payments/checkout', () => {
-  it('returns 400 when required fields are missing', async () => {
+  it('returns 400 when target/unit are missing', async () => {
     const payloads = [
-      { unitId: 1, installmentId: 2 },
       { email: 'test@example.com', installmentId: 2 },
       { email: 'test@example.com', unitId: 1 },
     ];
@@ -25,7 +20,13 @@ describe('POST /payments/checkout', () => {
     for (const body of payloads) {
       const res = await request(app).post('/payments/checkout').send(body);
       expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'Missing fields' });
+      expect(res.body).toEqual({ error: 'unitId and target (installmentId or serviceFeeId) required' });
     }
+  });
+
+  it('returns 401 when no auth or paylink is present', async () => {
+    const res = await request(app).post('/payments/checkout').send({ unitId: 1, installmentId: 2 });
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: 'UNAUTHORIZED' });
   });
 });

@@ -23,6 +23,12 @@ const SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_KEY ?? // optional alias
   '';
 
+const SUPABASE_ANON_KEY =
+  process.env.SUPABASE_ANON_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+  '';
+
 if (!SUPABASE_URL) {
   throw new Error('SUPABASE_URL is required (.env at repo root).');
 }
@@ -31,10 +37,20 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
     'SUPABASE_SERVICE_ROLE_KEY is missing. Paste the *service_role* key from Supabase → Settings → API into your root .env.'
   );
 }
+if (!SUPABASE_ANON_KEY) {
+  throw new Error('SUPABASE_ANON_KEY is required for user-scoped server queries.');
+}
 
 export const supabaseService = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+export function createUserClient(accessToken: string) {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}
 
 // Optional alias to match existing imports
 export const supabase = supabaseService;

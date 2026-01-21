@@ -33,11 +33,17 @@ export default function PaymentHistoryScreen() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    const { data: approved } = await supabase
+      .from('client_complex_status')
+      .select('complex_id')
+      .eq('user_id', user.id)
+      .eq('status', 'approved');
+    const approvedIds = ((approved as any[]) || []).map((r:any) => r.complex_id).filter(Boolean);
     const { data: units } = await supabase
       .from('units')
-      .select('id, complex_id, client_complex_status!inner(status)')
+      .select('id, complex_id')
       .eq('user_id', user.id)
-      ;
+      .in('complex_id', approvedIds.length ? approvedIds : ['-1']);
 
     const unitIds = units?.map((u) => u.id) || [];
     if (unitIds.length === 0) return;

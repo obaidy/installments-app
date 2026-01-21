@@ -5,6 +5,9 @@ Environment Variables
 - EXPO_PUBLIC_API_URL: Base URL of the Express API (e.g., http://localhost:3001).
 - STRIPE_SECRET_KEY: Stripe secret key used by server and scripts.
 - STRIPE_WEBHOOK_SECRET: Stripe webhook signing secret for /payments/webhook.
+- STRIPE_CURRENCY: Stripe currency for charging (default `usd`).
+- STRIPE_CURRENCY_DECIMALS: Minor unit decimals for Stripe currency (default `2`, `0` for JPY).
+- IQD_TO_STRIPE_RATE: Conversion factor from IQD to Stripe currency (default `1`).
 - APP_BASE_URL: Optional base URL used by the app for deep links.
 - USE_QI: Set to 1 to enable Qi gateway instead of Stripe.
 - QI_BASE: Qi API base URL (default https://api.qi.iq).

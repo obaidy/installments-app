@@ -57,11 +57,11 @@ export const grantAdminRole = (userId: string) =>
   supabase.from('user_roles').upsert({ user_id: userId, role: 'admin' });
 
 export const addUserToComplex = (userId: string, complexId: number) =>
-  supabase.from('user_complexes').insert({ user_id: userId, complex_id: complexId });
+  supabase.from('client_complex_status').insert({ user_id: userId, complex_id: complexId, status: 'pending' });
 
 export const removeUserFromComplex = (userId: string, complexId: number) =>
   supabase
-    .from('user_complexes')
+    .from('client_complex_status')
     .delete()
     .eq('user_id', userId)
     .eq('complex_id', complexId);

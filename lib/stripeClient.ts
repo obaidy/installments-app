@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { getStripeCurrency, toStripeMinor } from './payments/currency';
 
 // Use the server-only key for backend scripts
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -35,15 +36,17 @@ export async function attachDefaultPaymentMethod(
 
 export async function chargeCustomer(
   customerId: string,
-  amount: number,
+  amountIQD: number,
   metadata: Record<string, any> = {},
+  idempotencyKey?: string,
 ) {
+  const amount = toStripeMinor(amountIQD);
   return stripe.paymentIntents.create({
     customer: customerId,
     amount,
-    currency: 'usd',
+    currency: getStripeCurrency(),
     metadata,
     confirm: true,
     automatic_payment_methods: { enabled: true },
-  });
+  }, idempotencyKey ? { idempotencyKey } : undefined as any);
 }

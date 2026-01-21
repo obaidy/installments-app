@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 
 export async function GET(req: Request) {
   try {
@@ -17,7 +17,14 @@ export async function GET(req: Request) {
       console.error('[units/list] Missing Supabase env in admin-web');
       return NextResponse.json({ error: 'ENV_MISSING_SUPABASE' }, { status: 500 });
     }
-    const sb = createRouteHandlerClient({ cookies, supabaseUrl, supabaseKey });
+    const cookieStore = cookies();
+    const sb = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        get(name) { return cookieStore.get(name)?.value; },
+        set(name, value, options) { cookieStore.set({ name, value, ...options }); },
+        remove(name, options) { cookieStore.set({ name, value: '', ...options, maxAge: 0 }); },
+      },
+    });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 

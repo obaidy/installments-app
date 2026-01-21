@@ -33,7 +33,7 @@ export default function PayLinkPage({ params }: { params: { token: string } }) {
         {loading ? <p>Loading…</p> : error ? <p className="text-red-600">{error}</p> : (
           stripePromise ? (
             <Elements stripe={stripePromise} options={options}>
-              <CheckoutForm data={data} email={email} setEmail={setEmail} api={API} setError={setError} />
+              <CheckoutForm data={data} email={email} setEmail={setEmail} api={API} setError={setError} token={params.token} />
             </Elements>
           ) : (
             <p>Stripe not configured</p>
@@ -44,7 +44,7 @@ export default function PayLinkPage({ params }: { params: { token: string } }) {
   );
 }
 
-function CheckoutForm({ data, email, setEmail, api, setError }: { data: any; email: string; setEmail: (s: string) => void; api: string; setError: (s: string|null) => void }) {
+function CheckoutForm({ data, email, setEmail, api, setError, token }: { data: any; email: string; setEmail: (s: string) => void; api: string; setError: (s: string|null) => void; token: string }) {
   const stripe = useStripe();
   const elements = useElements();
   async function handlePay() {
@@ -57,7 +57,7 @@ function CheckoutForm({ data, email, setEmail, api, setError }: { data: any; ema
       if (!card) { setError('No card'); return; }
       const pmRes = await stripe.createPaymentMethod({ type: 'card', card, billing_details: { email } });
       if (pmRes.error || !pmRes.paymentMethod?.id) { setError(pmRes.error?.message || 'Card error'); return; }
-      const body: any = { unitId: data.unit_id, email, paymentMethodId: pmRes.paymentMethod.id };
+      const body: any = { unitId: data.unit_id, email, paymentMethodId: pmRes.paymentMethod.id, paylinkToken: token };
       if (data.target_type === 'installment') body.installmentId = data.target_id;
       else if (data.target_type === 'service_fee') body.serviceFeeId = data.target_id;
       else if (data.target_type === 'batch') { setError('Batch links not supported in web demo'); return; }

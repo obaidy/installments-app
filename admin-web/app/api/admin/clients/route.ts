@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 export async function GET() {
   try {
     // Require admin session
-    const sb = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      cookies: {
+        get(name) { return cookieStore.get(name)?.value; },
+        set(name, value, options) { cookieStore.set({ name, value, ...options }); },
+        remove(name, options) { cookieStore.set({ name, value: '', ...options, maxAge: 0 }); },
+      },
+    });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
     const { data: roleRow } = await sb.from('user_roles').select('role').eq('user_id', user.id).maybeSingle();
@@ -27,4 +37,3 @@ export async function GET() {
     return NextResponse.json({ error: 'INTERNAL', details: e?.message }, { status: 500 });
   }
 }
-

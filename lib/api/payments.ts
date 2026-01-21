@@ -1,17 +1,29 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { API_BASE } from '../config';
+import { supabase } from '../supabaseClient';
+
+async function authHeaders() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 
 export async function createCheckout(
   amountIQD: number,
   description?: string,
   metadata?: Record<string, string>,
-  target?: { type: 'installment' | 'service_fee'; id: number }
+  target?: { type: 'installment' | 'service_fee'; id: number },
+  idempotencyKey?: string,
 ) {
 const returnUrl = Linking.createURL('/(client)/payments/return');
 const r = await fetch(`${API_BASE}/payments/checkout`, {
-method: 'POST', headers: { 'content-type': 'application/json' },
+method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeaders()), ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) },
 body: JSON.stringify({
   amountIQD,
   description,
@@ -45,10 +57,11 @@ export async function createBatchCheckout(
   unitId: number,
   items: Array<{ type: 'installment' | 'service_fee'; id: number }> ,
   email?: string,
+  idempotencyKey?: string,
 ) {
   const r = await fetch(`${API_BASE}/payments/checkout-batch`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ unitId, items, email }),
+    method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeaders()), ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) },
+    body: JSON.stringify({ unitId, items, email, idempotencyKey }),
   });
   const d = await r.json();
   if (!r.ok || !d?.ok) throw new Error(d?.error || 'Batch payment error');

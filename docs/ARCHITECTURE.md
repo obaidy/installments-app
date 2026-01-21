@@ -17,7 +17,7 @@ Backend (Node/Express)
 
 Data Model (Supabase)
 
-- Core tables: `user_roles`, `user_complexes`, `complexes`, `units`, `installments`, `service_fees`, `payments` (+ optional `subscriptions`).
+- Core tables: `user_roles`, `client_complex_status`, `complexes`, `units`, `installments`, `service_fees`, `payments` (+ optional `subscriptions`).
 - RLS: policies restrict access by role and relation; see README for expectations.
 
 Background Jobs

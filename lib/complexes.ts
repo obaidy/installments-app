@@ -28,8 +28,8 @@ export async function insertComplexesFromInput(
 
   for (const id of existingMap.values()) {
     const { error: linkError } = await supabase
-      .from('user_complexes')
-      .insert({ user_id: user.id, complex_id: id });
+      .from('client_complex_status')
+      .insert({ user_id: user.id, complex_id: id, status: 'pending' });
     if (linkError) return linkError.message;
   }
 

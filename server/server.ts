@@ -1,10 +1,13 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import type Stripe from 'stripe';
 
 import { stripe } from '../lib/stripeClient';
 import { supabase } from '../lib/supabaseServiceClient';
+import { fromStripeMinor } from '../lib/payments/currency';
+import { stripeIntentStatusToPaymentStatus } from '../lib/payments/status';
 
 // Routers
 import paymentMethodsRouter from './routes/paymentMethods';
@@ -15,7 +18,21 @@ import authRouter from './routes/auth';
 const app = express();
 
 // CORS first
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.length === 0) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
+
+// Cookies for Supabase auth headers fallback
+app.use(cookieParser());
 
 // --- Stripe webhook MUST be before express.json() and use raw body ---
 app.post(
@@ -41,14 +58,16 @@ app.post(
         const unitId = Number(intent.metadata?.unit_id);
         const installmentId = Number(intent.metadata?.installment_id);
         const serviceFeeId = Number((intent.metadata as any)?.service_fee_id || 0);
-        const amountCents = intent.amount_received || intent.amount || 0;
+        const amountMinor = intent.amount_received || intent.amount || 0;
+        const amountIQD = fromStripeMinor(amountMinor);
 
         if (unitId && (installmentId || serviceFeeId)) {
+          const status = stripeIntentStatusToPaymentStatus(intent.status);
           const base: any = {
             unit_id: unitId,
-            amount: amountCents / 100,
-            status: intent.status as any,
-            paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+            amount: amountIQD,
+            status,
+            paid_at: status === 'paid' ? new Date().toISOString() : null,
           };
           if (installmentId) base.installment_id = installmentId;
           if (serviceFeeId) base.service_fee_id = serviceFeeId;
@@ -56,7 +75,7 @@ app.post(
           await supabase.from('payments').upsert(base as any);
 
           // Mark paid on success
-          if (intent.status === 'succeeded') {
+          if (status === 'paid') {
             if (installmentId) {
               await supabase
                 .from('installments')
@@ -79,14 +98,15 @@ app.post(
             .eq('provider_ref', intent.id);
           if (staged && staged.length) {
             for (const r of staged as any[]) {
+              const status = stripeIntentStatusToPaymentStatus(intent.status);
               await supabase.from('payments').upsert({
                 unit_id: Number(r.unit_id),
                 amount: Number(r.amount),
-                status: intent.status as any,
-                paid_at: intent.status === 'succeeded' ? new Date().toISOString() : null,
+                status,
+                paid_at: status === 'paid' ? new Date().toISOString() : null,
                 ...(r.target_type === 'installment' ? { installment_id: Number(r.target_id) } : { service_fee_id: Number(r.target_id) }),
               } as any);
-              if (intent.status === 'succeeded') {
+              if (status === 'paid') {
                 if (r.target_type === 'installment') {
                   await supabase.from('installments').update({ paid: true, paid_at: new Date().toISOString() }).eq('id', Number(r.target_id));
                 } else {

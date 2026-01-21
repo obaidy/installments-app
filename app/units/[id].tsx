@@ -18,11 +18,20 @@ export default function UnitDetailsScreen() {
   }, [id]);
 
   async function fetchUnit(unitId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: approved } = await supabase
+      .from('client_complex_status')
+      .select('complex_id')
+      .eq('user_id', user.id)
+      .eq('status', 'approved');
+    const approvedIds = ((approved as any[]) || []).map((r:any) => r.complex_id).filter(Boolean);
     const { data } = await supabase
       .from('units')
-      .select('*, complex:complexes(name), client_complex_status!inner(status)')
+      .select('*, complex:complexes(name)')
       .eq('id', unitId)
-      .eq('client_complex_status.status', 'approved')
+      .eq('user_id', user.id)
+      .in('complex_id', approvedIds.length ? approvedIds : ['-1'])
       .single();
     if (data) setUnit(data);
   }
